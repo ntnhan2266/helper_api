@@ -19,11 +19,11 @@ const userSchema = new mongoose.Schema({
     email: {
         type: String,
         unique: true,
-        required: true,
+        default: null,
         trim: true,
         lowercase: true,
         validate(value) {
-            if (!validator.isEmail(value)) {
+            if (value != null && !validator.isEmail(value)) {
                 throw new Error('Email is invalid')
             }
         }
@@ -38,10 +38,10 @@ const userSchema = new mongoose.Schema({
     },
     phoneNumber: {
         type: String,
-        required: true,
         trim: true,
+        default: null,
         validate(value) {
-            if (value.length < 8) {
+            if (value != null && value.length < 8) {
                 throw new Error('Phone number is too short')
             }
         }
@@ -59,6 +59,7 @@ const userSchema = new mongoose.Schema({
     address: {
         type: String,
         required: false,
+        default: null
     },
 }, {timestamps: true});
 

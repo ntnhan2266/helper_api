@@ -101,4 +101,49 @@ router.post('/login', [
     }
 )
 
+router.post('/login-with-fb',[
+        check('token').not().isEmpty(),
+        check('name').not().isEmpty(),
+    ],
+    async (req, res) => { 
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            console.log('Error');
+            return res.status(422).json({ errors: errors.array() });
+        }
+        const { token, name, email } = req.body;
+        // Verify token comes from the client app
+        admin.auth().verifyIdToken(token)
+            .then(async function(decodedToken) {
+                let uid = decodedToken.uid;
+                // Find user with uid
+                const user = await User.findOne({ uid: uid });
+                if (user) {
+                    let privateKey = fs.readFileSync(path.join(__dirname, '../configs/private.key'), 'utf8');
+                    let token = jwt.sign({user: user}, privateKey, { algorithm: 'RS256'});
+                    res.send({user, token});
+                } else {
+                    // Login failed, create one account with decoded uid
+                    // Create new user with uid, phone, name and email
+                    var newUser = new User({
+                        uid: uid,
+                        email: email,
+                        name: name
+                    });
+                    await newUser.save();
+                    let privateKey = fs.readFileSync(path.join(__dirname, '../configs/private.key'), 'utf8');
+                    let token = jwt.sign({user: user}, privateKey, { algorithm: 'RS256'});
+                    res.send({user: newUser, token});
+                }
+                
+            }).catch(function(error) {
+                console.log(error)
+                res.send({
+                    errorCode: 1,
+                    errorMessage: 'Can not verify token'
+                });
+            });
+    }
+)
+
 module.exports = router
