@@ -63,4 +63,42 @@ router.post('/register', [
     }
 )
 
+router.post('/login', [
+        check('token').not().isEmpty(),
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            console.log('Error');
+            return res.status(422).json({ errors: errors.array() });
+        }
+        const { token } = req.body;
+        // Verify token comes from the client app
+        admin.auth().verifyIdToken(token)
+            .then(async function(decodedToken) {
+                let uid = decodedToken.uid;
+                // Find user with uid
+                const user = await User.findOne({ uid: uid });
+                if (user) {
+                    let privateKey = fs.readFileSync(path.join(__dirname, '../configs/private.key'), 'utf8');
+                    let token = jwt.sign({user: user}, privateKey, { algorithm: 'RS256'});
+                    res.send({user, token});
+                } else {
+                    // Login failed
+                    res.send({
+                        errorCode: 3,
+                        errorMessage: 'Phone number has not registered yet'
+                    })
+                }
+                
+            }).catch(function(error) {
+                console.log(error)
+                res.send({
+                    errorCode: 1,
+                    errorMessage: 'Can not verify token'
+                });
+            });
+    }
+)
+
 module.exports = router
