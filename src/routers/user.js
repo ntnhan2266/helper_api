@@ -1,18 +1,18 @@
-const express = require('express')
-const { check, validationResult } = require('express-validator')
+const express = require('express');
+const { check, validationResult } = require('express-validator');
 const admin = require("firebase-admin")
-const fs = require('fs')
+const fs = require('fs');
 const path = require('path');
-const jwt = require('jsonwebtoken')
+const jwt = require('jsonwebtoken');
 
-const User = require('../models/user')
-const auth = require('../middleware/auth')
-const router = new express.Router()
+const User = require('../models/user');
+const authMiddleware = require('../middleware/auth');
+const router = new express.Router();
 
 router.get('/test', (req, res) => {
     console.log(req)
     res.send({data: 'OK'})
-})
+});
 
 router.post('/register', [
         check('name').not().isEmpty(),
@@ -44,8 +44,8 @@ router.post('/register', [
                         name: name
                     });
                     await user.save();
-                    let privateKey = fs.readFileSync(path.join(__dirname, '../configs/private.key'), 'utf8');
-                    let token = jwt.sign({user: user}, privateKey, { algorithm: 'RS256'});
+                    let privateKey = fs.readFileSync(path.join(__dirname, '../configs/jwtRS256.key'), 'utf8');
+                    let token = jwt.sign({user: user}, privateKey, { algorithm: 'RS256' });
                     res.send({user, token});
                 } else {
                     res.send({
@@ -61,7 +61,7 @@ router.post('/register', [
                 });
             });
     }
-)
+);
 
 router.post('/login', [
         check('token').not().isEmpty(),
@@ -80,7 +80,7 @@ router.post('/login', [
                 // Find user with uid
                 const user = await User.findOne({ uid: uid });
                 if (user) {
-                    let privateKey = fs.readFileSync(path.join(__dirname, '../configs/private.key'), 'utf8');
+                    let privateKey = fs.readFileSync(path.join(__dirname, '../configs/jwtRS256.key'), 'utf8');
                     let token = jwt.sign({user: user}, privateKey, { algorithm: 'RS256'});
                     res.send({user, token});
                 } else {
@@ -99,7 +99,7 @@ router.post('/login', [
                 });
             });
     }
-)
+);
 
 router.post('/login-with-fb',[
         check('token').not().isEmpty(),
@@ -119,7 +119,7 @@ router.post('/login-with-fb',[
                 // Find user with uid
                 const user = await User.findOne({ uid: uid });
                 if (user) {
-                    let privateKey = fs.readFileSync(path.join(__dirname, '../configs/private.key'), 'utf8');
+                    let privateKey = fs.readFileSync(path.join(__dirname, '../configs/jwtRS256.key'), 'utf8');
                     let token = jwt.sign({user: user}, privateKey, { algorithm: 'RS256'});
                     res.send({user, token});
                 } else {
@@ -131,7 +131,7 @@ router.post('/login-with-fb',[
                         name: name
                     });
                     await newUser.save();
-                    let privateKey = fs.readFileSync(path.join(__dirname, '../configs/private.key'), 'utf8');
+                    let privateKey = fs.readFileSync(path.join(__dirname, '../configs/jwtRS256.key'), 'utf8');
                     let token = jwt.sign({user: user}, privateKey, { algorithm: 'RS256'});
                     res.send({user: newUser, token});
                 }
@@ -144,6 +144,14 @@ router.post('/login-with-fb',[
                 });
             });
     }
-)
+);
 
-module.exports = router
+router.get('/auth/me', authMiddleware,
+    (req, res) => {
+        res.send({
+            user: req.user
+        });
+    }
+);
+
+module.exports = router;
