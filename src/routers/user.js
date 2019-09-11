@@ -9,7 +9,7 @@ const User = require('../models/user');
 const authMiddleware = require('../middleware/auth');
 const router = new express.Router();
 
-router.get('/test', (req, res) => {
+router.get('/', (req, res) => {
     console.log(req)
     res.send({data: 'OK'})
 });
