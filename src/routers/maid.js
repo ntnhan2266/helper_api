@@ -62,4 +62,21 @@ router.post("/maid/edit", authMiddleware, async (req, res) => {
   }
 });
 
+router.get("/maid-list", async (req, res) => {
+  try {
+    const maids = await Maid.find({}, null, { skip: 0, limit: 10 }).populate({
+      path: "user",
+      select: "name avatar birthday gender phoneNumber address"
+    });
+    const total = await Maid.count({});
+    res.send({ maids, total });
+  } catch (e) {
+    console.log(e);
+    res.send({
+      errorCode: 1,
+      errorMessage: "Unexpected errors"
+    });
+  }
+});
+
 module.exports = router;
