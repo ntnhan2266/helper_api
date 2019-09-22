@@ -6,6 +6,7 @@ const bodyParser = require("body-parser");
 const userRouter = require('./routers/user');
 const authRouter = require('./routers/auth');
 const fileRouter = require('./routers/file');
+const maidRouter = require('./routers/maid');
 
 // Config global path
 global.appRoot = path.resolve(__dirname + '/..');
@@ -20,6 +21,7 @@ app.use(express.json({limit: '50mb'}));
 app.use('/api', userRouter);
 app.use('/api', authRouter);
 app.use('/api', fileRouter);
+app.use('/api', maidRouter);
 
 app.listen(port, () => {
     console.log('Server is up on port ' + port)

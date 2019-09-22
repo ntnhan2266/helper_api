@@ -22,6 +22,7 @@ router.post('/user/edit', authMiddleware, async (req, res) => {
         user.lat = body.lat;
         user.address = body.address;
         user.birthday = Date.parse(body.birthday);
+        user.avatar = body.avatar;
         await user.save();
         res.send({user});
     } catch(e) {
