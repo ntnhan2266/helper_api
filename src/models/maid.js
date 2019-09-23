@@ -16,10 +16,10 @@ const maidSchema = new mongoose.Schema({
         maxlength: 255,
         minlength: 50,
     },
-    salaryType: {
+    salary: {
         type: Number,
         required: true,
-        default: 1,
+        default: 0,
     },
     jobTypes: {
         type: [Number],

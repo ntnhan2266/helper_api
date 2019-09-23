@@ -25,7 +25,7 @@ router.post("/maid", authMiddleware, async (req, res) => {
       intro: body.intro,
       literacyType: body.literacyType,
       exp: body.exp,
-      salaryType: body.salaryType,
+      salary: body.salary,
       jobTypes: body.jobTypes,
       supportAreas: body.supportAreas
     });
@@ -48,7 +48,7 @@ router.post("/maid/edit", authMiddleware, async (req, res) => {
     maid.intro = body.intro;
     maid.literacyType = body.literacyType;
     maid.exp = body.exp;
-    maid.salaryType = body.salaryType;
+    maid.salary = body.salary;
     maid.jobTypes = body.jobTypes;
     maid.supportAreas = body.supportAreas;
     await maid.save();
