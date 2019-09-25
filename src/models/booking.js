@@ -48,14 +48,20 @@ const bookingSchema = new mongoose.Schema(
       ref: "Maid"
     },
     interval: {
-      type: Map,
-      of: Boolean,
-      required: false
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Interval",
+      required: false,
+      default: null
     },
-    workingFee: {
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
+    },
+    amount: {
       type: Number,
-      required: true
-    },
+      required: true,
+      default: 0
+    }
   },
   { timestamps: true }
 );

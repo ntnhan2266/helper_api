@@ -68,7 +68,7 @@ router.get("/maid-list", async (req, res) => {
       path: "user",
       select: "name avatar birthday gender phoneNumber address"
     });
-    const total = await Maid.count({});
+    const total = await Maid.countDocuments({});
     res.send({ maids, total });
   } catch (e) {
     console.log(e);
