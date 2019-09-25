@@ -7,6 +7,7 @@ const userRouter = require('./routers/user');
 const authRouter = require('./routers/auth');
 const fileRouter = require('./routers/file');
 const maidRouter = require('./routers/maid');
+const bookingRouter = require('./routers/booking');
 
 // Config global path
 global.appRoot = path.resolve(__dirname + '/..');
@@ -22,6 +23,7 @@ app.use('/api', userRouter);
 app.use('/api', authRouter);
 app.use('/api', fileRouter);
 app.use('/api', maidRouter);
+app.use('/api', bookingRouter);
 
 app.listen(port, () => {
     console.log('Server is up on port ' + port)

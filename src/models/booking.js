@@ -51,7 +51,11 @@ const bookingSchema = new mongoose.Schema(
       type: Map,
       of: Boolean,
       required: false
-    }
+    },
+    workingFee: {
+      type: Number,
+      required: true
+    },
   },
   { timestamps: true }
 );
