@@ -48,7 +48,7 @@ router.post("/booking", authMiddleware, async (req, res) => {
     const maid = await Maid.findById(body.maid);
     let amount = calculateAmount(
       body.type,
-      body.interval,
+      body.workingDates,
       body.startTime,
       body.endTime,
       maid.salary
@@ -58,16 +58,32 @@ router.post("/booking", authMiddleware, async (req, res) => {
     if (body.type == 2) {
       const interval = new Interval();
       const days = [];
-      for (let i = 0; i < body.interval.length; i++) {
-        days.push(new Date(body.interval[i]));
+      for (let i = 0; i < body.workingDates.length; i++) {
+        days.push(new Date(body.workingDates[i]));
       }
       interval.days = days;
+      interval.options = body.interval;
       await interval.save();
-      body.interval = interval.id;
+      booking.interval = interval.id;
     }
     await booking.save();
-    console.log(booking.amount);
     res.send({ booking });
+  } catch (e) {
+    console.log(e);
+    res.send({
+      errorCode: 1,
+      errorMessage: "Can not create booking"
+    });
+  }
+});
+
+router.get('/booking', authMiddleware, async (req, res) => {
+  try {
+    const id = req.query.id;
+    const booking = await Booking.findById(id).populate('interval');
+    const maid = await Maid.findById(booking.maid).populate('user');
+    booking.maid = maid;
+    res.send({booking});
   } catch (e) {
     console.log(e);
     res.send({
