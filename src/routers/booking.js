@@ -34,8 +34,9 @@ router.post("/booking", authMiddleware, async (req, res) => {
     const body = req.body;
     const booking = new Booking();
     booking.type = body.type;
+    booking.category = body.category;
     booking.address = body.address;
-    booking.houseNumber = body.houseNumber;
+    booking.houseNumber = body.houseNumber; 
     booking.startTime = Date(body.startTime);
     booking.endTime = Date(body.endTime);
     booking.note = body.note;
@@ -89,6 +90,24 @@ router.get('/booking', authMiddleware, async (req, res) => {
     res.send({
       errorCode: 1,
       errorMessage: "Can not create booking"
+    });
+  }
+});
+
+router.get('/bookings', authMiddleware, async (req, res) => {
+  try {
+  // Filter
+  const type = req.query.type;
+  const pageSize = req.query.pageSize ? req.query.pageSize : 12;
+  const pageIndex = req.query.pageIndex ? req.query.pageIndex : 0;
+  const requestUser = req.user;
+  const bookings = await Booking.find({createdBy: requestUser.id}, {skip: pageIndex * pageSize, limit: pageSize});
+  res.send({bookings});
+  } catch(e) {
+    console.log(e);
+    res.send({
+      errorCode: 1,
+      errorMessage: "Failed to load data"
     });
   }
 });
