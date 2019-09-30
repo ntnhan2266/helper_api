@@ -7,6 +7,7 @@ const Utils = require("../utils/common");
 const authMiddleware = require("../middleware/auth");
 const router = new express.Router();
 var mongoose = require('mongoose');
+var _ = require('lodash');
 
 const calculateAmount = (
   type,
@@ -97,12 +98,27 @@ router.get('/booking', authMiddleware, async (req, res) => {
 router.get('/bookings', authMiddleware, async (req, res) => {
   try {
   // Filter
-  const type = req.query.type;
+  const status = req.query.status;
   const pageSize = req.query.pageSize ? req.query.pageSize : 12;
   const pageIndex = req.query.pageIndex ? req.query.pageIndex : 0;
   const requestUser = req.user;
-  const bookings = await Booking.find({createdBy: requestUser.id}, {skip: pageIndex * pageSize, limit: pageSize});
-  res.send({bookings});
+  const bookings = await Booking.find({createdBy: requestUser._id, status: status}).skip(pageIndex * pageSize).limit(pageSize);
+  const maidIds = bookings.map((booking) => {
+    return mongoose.Types.ObjectId(booking.maid);
+  });
+  let maids = await Maid.find({'_id': {$in : maidIds}}).populate({
+    path: "user",
+    select: "name avatar birthday gender phoneNumber address"
+  });
+  maids = _.keyBy(maids, '_id');
+  for (let i = 0; i < bookings.length; i++) {
+    if (maids[bookings[i].maid]) {
+      bookings[i].maid = maids[bookings[i].maid];
+    }
+  }
+  const total = await Booking.countDocuments({createdBy: requestUser._id, status: status});
+  console.log(bookings);
+  res.send({bookings, total});
   } catch(e) {
     console.log(e);
     res.send({
