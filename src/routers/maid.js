@@ -62,9 +62,30 @@ router.post("/maid/edit", authMiddleware, async (req, res) => {
   }
 });
 
-router.get("/maid-list", async (req, res) => {
+router.get("/maids", async (req, res) => {
   try {
-    const maids = await Maid.find({}, null, { skip: 0, limit: 10 }).populate({
+    const page = req.query.pageIndex ? req.query.pageIndex : 0;
+    const pageSize = req.query.pageSize ? req.query.pageSize : 10;
+    const maids = await Maid.find({}, null, { skip: page * pageSize, limit: pageSize }).populate({
+      path: "user",
+      select: "name avatar birthday gender phoneNumber address"
+    });
+    const total = await Maid.countDocuments({});
+    res.send({ maids, total });
+  } catch (e) {
+    console.log(e);
+    res.send({
+      errorCode: 1,
+      errorMessage: "Unexpected errors"
+    });
+  }
+});
+
+router.get("/maids/top-rating", async (req, res) => {
+  try {
+    const page = req.query.pageIndex ? req.query.pageIndex : 0;
+    const pageSize = req.query.pageSize ? req.query.pageSize : 10;
+    const maids = await Maid.find({}, null, { skip: page * pageSize, limit: pageSize }).populate({
       path: "user",
       select: "name avatar birthday gender phoneNumber address"
     });
