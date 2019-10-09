@@ -219,11 +219,8 @@ router.post("/booking/cancel", authMiddleware, async (req, res) => {
     // Has access
     // Approve
     booking.status = Contants.BOOKING_STATUS.CANCELLED;
-    const cancelledBooking = new CancelledBooking();
-    cancelledBooking.booking = booking._id;
-    cancelledBooking.reason = reason;
-    cancelledBooking.content = content;
-    await cancelledBooking.save();
+    booking.reason = reason;
+    booking.content = content;
     await booking.save();
     res.send({ completed: true });
   } catch (e) {
@@ -243,11 +240,8 @@ router.post("/booking/reject", authMiddleware, async (req, res) => {
     // Has access
     // Approve
     booking.status = Contants.BOOKING_STATUS.REJECTED;
-    const cancelledBooking = new CancelledBooking();
-    cancelledBooking.booking = booking._id;
-    cancelledBooking.reason = reason;
-    cancelledBooking.content = content;
-    await cancelledBooking.save();
+    booking.reason = reason;
+    booking.content = content;
     await booking.save();
     res.send({ completed: true });
   } catch (e) {
