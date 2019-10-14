@@ -1,13 +1,27 @@
 const express = require("express");
 
 const Maid = require("../models/maid");
+const Review = require('../models/review');
 const authMiddleware = require("../middleware/auth");
 const router = new express.Router();
+const _ = require('lodash');
 
 router.get("/maid", authMiddleware, async (req, res) => {
   try {
-    const requestUser = req.user;
-    const maid = await Maid.findOne({ user: requestUser._id });
+    let maid;
+    const id = req.query.id;
+    if (id) {
+      maid = await Maid.findById(id).populate({
+        path: "user",
+        select: "name avatar birthday gender phoneNumber address"
+      });;
+    } else {
+      const requestUser = req.user;
+      maid = await Maid.findOne({user: requestUser._id}).populate({
+        path: "user",
+        select: "name avatar birthday gender phoneNumber address"
+      });
+    }
     res.send({ maid, isHost: true });
   } catch (e) {
     console.log(e);
@@ -19,7 +33,6 @@ router.post("/maid", authMiddleware, async (req, res) => {
   try {
     const requestUser = req.user;
     const body = req.body;
-    console.log(body);
     const maid = new Maid({
       user: requestUser._id,
       intro: body.intro,
@@ -85,6 +98,19 @@ router.get("/maids/top-rating", async (req, res) => {
   try {
     const page = req.query.pageIndex ? req.query.pageIndex : 0;
     const pageSize = req.query.pageSize ? req.query.pageSize : 10;
+    const reviews = await Review.aggregate([
+        {$group: {
+          _id: '$user',
+          avgRating: {$avg: '$rating'}
+        },},
+        {
+          $sort: {avgRating: -1}
+        },
+        {
+          $limit: pageSize
+        }
+    ]);
+    console.log(reviews);
     const maids = await Maid.find({}, null, { skip: page * pageSize, limit: pageSize }).populate({
       path: "user",
       select: "name avatar birthday gender phoneNumber address"

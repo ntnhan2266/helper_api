@@ -5,8 +5,7 @@ const reviewSchema = new mongoose.Schema(
   {
     booking: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Booking",
-      required: true
+      ref: 'Booking'
     },
     content: {
       type: String,
@@ -23,11 +22,15 @@ const reviewSchema = new mongoose.Schema(
         }
       }
     },
-    user: {
+    maid: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Booking",
+      ref: "Maid",
       required: true
-    }
+    },
+    helpful: {
+      type: Number,
+      default: 0,
+    },
   },
   { timestamps: true }
 );
