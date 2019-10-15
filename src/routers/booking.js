@@ -200,6 +200,7 @@ router.put("/booking/complete", authMiddleware, async (req, res) => {
     // Has access
     // Approve
     booking.status = Contants.BOOKING_STATUS.COMPLETED;
+    booking.completedAt = new Date();
     await booking.save();
     res.send({ completed: true });
   } catch (e) {

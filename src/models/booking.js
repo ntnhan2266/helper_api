@@ -49,7 +49,8 @@ const bookingSchema = new mongoose.Schema(
     },
     maid: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "Maid"
+      ref: "Maid",
+      required: true
     },
     interval: {
       type: mongoose.Schema.Types.ObjectId,
@@ -59,7 +60,8 @@ const bookingSchema = new mongoose.Schema(
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User"
+      ref: "User",
+      required: true
     },
     amount: {
       type: Number,
@@ -72,11 +74,18 @@ const bookingSchema = new mongoose.Schema(
     },
     reason: {
       type: Number,
-      required: false
+      required: false,
+      default: null
     },
     content: {
       type: String,
-      required: false
+      required: false,
+      default: null,
+    },
+    completedAt: {
+      type: Date,
+      required: false,
+      default: null,
     },
   },
   { timestamps: true }

@@ -17,7 +17,7 @@ router.get("/maid", authMiddleware, async (req, res) => {
       });;
     } else {
       const requestUser = req.user;
-      maid = await Maid.findOne({user: requestUser._id}).populate({
+      maid = await Maid.findOne({ user: requestUser._id }).populate({
         path: "user",
         select: "name avatar birthday gender phoneNumber address"
       });
@@ -94,21 +94,23 @@ router.get("/maids", async (req, res) => {
   }
 });
 
-router.get("/maids/top-rating", async (req, res) => {
+router.get("/maids/top-rating", authMiddleware, async (req, res) => {
   try {
     const page = req.query.pageIndex ? req.query.pageIndex : 0;
     const pageSize = req.query.pageSize ? req.query.pageSize : 10;
     const reviews = await Review.aggregate([
-        {$group: {
+      {
+        $group: {
           _id: '$user',
-          avgRating: {$avg: '$rating'}
-        },},
-        {
-          $sort: {avgRating: -1}
+          avgRating: { $avg: '$rating' }
         },
-        {
-          $limit: pageSize
-        }
+      },
+      {
+        $sort: { avgRating: -1 }
+      },
+      {
+        $limit: pageSize
+      }
     ]);
     console.log(reviews);
     const maids = await Maid.find({}, null, { skip: page * pageSize, limit: pageSize }).populate({
