@@ -32,29 +32,37 @@ router.post("/review", authMiddleware, async (req, res) => {
 });
 
 router.get('/reviews', async (req, res) => {
-  const pageSize = req.query.pageSize || 10;
-  const pageIndex = req.query.pageIndex || 0;
-  const maidId = req.query.maidId;
-  const reviews = await Review.find({ maid: maidId })
-    .skip(pageIndex * pageSize)
-    .limit(pageSize)
-    .sort([['createdAt', -1]]).exec();
-  const maidIds = reviews.map(review => {
-    console.log(review);
-    return mongoose.Types.ObjectId(review.maid);
-  });
-  let maids = await Maid.find({ _id: { $in: maidIds } }).populate({
-    path: "user",
-    select: "name avatar birthday gender phoneNumber address"
-  });
-  maids = _.keyBy(maids, "_id");
-  for (let i = 0; i < reviews.length; i++) {
-    if (maids[reviews[i].maid]) {
-      reviews[i].maid = maids[reviews[i].maid];
+  try {
+    const pageSize = req.query.pageSize || 10;
+    const pageIndex = req.query.pageIndex || 0;
+    const maidId = req.query.maidId;
+    const reviews = await Review.find({ maid: maidId })
+      .skip(pageIndex * pageSize)
+      .limit(pageSize)
+      .sort([['createdAt', -1]]).exec();
+    const maidIds = reviews.map(review => {
+      console.log(review);
+      return mongoose.Types.ObjectId(review.maid);
+    });
+    let maids = await Maid.find({ _id: { $in: maidIds } }).populate({
+      path: "user",
+      select: "name avatar birthday gender phoneNumber address"
+    });
+    maids = _.keyBy(maids, "_id");
+    for (let i = 0; i < reviews.length; i++) {
+      if (maids[reviews[i].maid]) {
+        reviews[i].maid = maids[reviews[i].maid];
+      }
     }
+    const total = await Review.countDocuments({ maid: maidId });
+    res.send({ reviews, total });
+  } catch (e) {
+    console.log(e);
+    res.send({
+      errorCode: 1,
+      errorMessage: "Something went wrong"
+    });
   }
-  const total = await Review.countDocuments({maid: maidId});
-  res.send({ reviews, total});
 });
 
 router.get('/reviews', authMiddleware, async (req, res) => {
