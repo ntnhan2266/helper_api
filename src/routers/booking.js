@@ -3,13 +3,13 @@ const express = require("express");
 const Booking = require("../models/booking");
 const Maid = require("../models/maid");
 const Interval = require("../models/interval");
-const CancelledBooking = require("../models/cancelled_booking");
-const Utils = require("../utils/common");
 const Contants = require("../utils/constants");
 const authMiddleware = require("../middleware/auth");
 const router = new express.Router();
-var mongoose = require("mongoose");
-var _ = require("lodash");
+const mongoose = require("mongoose");
+const _ = require("lodash");
+const moment = require("moment");
+
 
 const calculateAmount = (type, interval, startTime, endTime, salaryPerHour) => {
   let price = 0;
@@ -80,15 +80,25 @@ router.get("/booking", authMiddleware, async (req, res) => {
     const id = req.query.id;
     const booking = await Booking.findById(id)
       .populate("interval")
-      .populate("createdBy");
+      .populate("createdBy").lean().exec();
     const maid = await Maid.findById(booking.maid).populate("user");
     booking.maid = maid;
+    booking.canReview = false;
+    let completedAt = booking.completedAt;
+    if (completedAt != null && !booking.isReviewed) {
+      completedAt = moment(completedAt);
+      const now = moment();
+      let timeToReview = moment.duration(now.diff(completedAt)).asHours();
+      if (timeToReview < 72) {
+        booking.canReview = true;
+      }
+    }
     res.send({ booking });
   } catch (e) {
     console.log(e);
     res.send({
       errorCode: 1,
-      errorMessage: "Can not create booking"
+      errorMessage: "Can not get booking"
     });
   }
 });
@@ -97,7 +107,6 @@ router.get("/bookings", authMiddleware, async (req, res) => {
   try {
     // Filter
     const status = req.query.status;
-    console.log(status);
     const pageSize = req.query.pageSize ? req.query.pageSize : 12;
     const pageIndex = req.query.pageIndex ? req.query.pageIndex : 0;
     const requestUser = req.user;
