@@ -23,7 +23,6 @@ router.post('/register', [
     async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            console.log('Error');
             return res.status(422).json({ errors: errors.array() });
         }
         const { token, name, phoneNumber, email } = req.body;
@@ -69,7 +68,6 @@ router.post('/login', [
     async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            console.log('Error');
             return res.status(422).json({ errors: errors.array() });
         }
         const { token } = req.body;
@@ -108,7 +106,6 @@ router.post('/login-with-fb',[
     async (req, res) => { 
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            console.log('Error');
             return res.status(422).json({ errors: errors.array() });
         }
         const { token, name, email } = req.body;

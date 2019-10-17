@@ -107,8 +107,8 @@ router.get("/bookings", authMiddleware, async (req, res) => {
   try {
     // Filter
     const status = req.query.status;
-    const pageSize = req.query.pageSize ? req.query.pageSize : 12;
-    const pageIndex = req.query.pageIndex ? req.query.pageIndex : 0;
+    const pageSize = req.query.pageSize ? req.query.pageSize * 1 : 12;
+    const pageIndex = req.query.pageIndex ? req.query.pageIndex * 1 : 0;
     const requestUser = req.user;
     const bookings = await Booking.find({
       createdBy: requestUser._id,

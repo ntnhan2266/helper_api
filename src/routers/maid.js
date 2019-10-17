@@ -112,7 +112,6 @@ router.get("/maids/top-rating", authMiddleware, async (req, res) => {
         $limit: pageSize
       }
     ]);
-    console.log(reviews);
     const maids = await Maid.find({}, null, { skip: page * pageSize, limit: pageSize }).populate({
       path: "user",
       select: "name avatar birthday gender phoneNumber address"
