@@ -90,7 +90,7 @@ const bookingSchema = new mongoose.Schema(
     isReviewed: {
       type: Boolean,
       default: false,
-    }
+    },
   },
   { timestamps: true }
 );

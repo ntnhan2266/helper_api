@@ -6,8 +6,14 @@ const BOOKING_STATUS = {
     COMPLETED: 3,
     CANCELLED: 4,
     REJECTED: 5
+};
+
+const ROLE = {
+    ADMIN: 2,
+    STANDARD: 1
 }
 
 Contants.BOOKING_STATUS = BOOKING_STATUS;
+Contants.ROLE = ROLE;
 
 module.exports = Contants;

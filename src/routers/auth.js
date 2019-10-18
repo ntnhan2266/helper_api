@@ -4,6 +4,7 @@ const admin = require("firebase-admin")
 const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 
 const User = require('../models/user');
 const authMiddleware = require('../middleware/auth');
@@ -11,15 +12,15 @@ const router = new express.Router();
 
 router.get('/', (req, res) => {
     console.log(req)
-    res.send({data: 'OK'})
+    res.send({ data: 'OK' })
 });
 
 router.post('/register', [
-        check('name').not().isEmpty(),
-        check('email').not().isEmpty(),
-        check('token').not().isEmpty(),
-        check('phoneNumber').not().isEmpty()
-    ],
+    check('name').not().isEmpty(),
+    check('email').not().isEmpty(),
+    check('token').not().isEmpty(),
+    check('phoneNumber').not().isEmpty()
+],
     async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -28,7 +29,7 @@ router.post('/register', [
         const { token, name, phoneNumber, email } = req.body;
         // Verify token comes from the client app
         admin.auth().verifyIdToken(token)
-            .then(async function(decodedToken) {
+            .then(async function (decodedToken) {
                 let uid = decodedToken.uid;
                 // Check uid is existed
                 var existedUser = await User.findOne({
@@ -44,15 +45,15 @@ router.post('/register', [
                     });
                     await user.save();
                     let privateKey = fs.readFileSync(path.join(__dirname, '../configs/jwtRS256.key'), 'utf8');
-                    let token = jwt.sign({user: user}, privateKey, { algorithm: 'RS256' });
-                    res.send({user, token});
+                    let token = jwt.sign({ user: user }, privateKey, { algorithm: 'RS256' });
+                    res.send({ user, token });
                 } else {
                     res.send({
                         errorCode: 2,
                         errorMessage: 'UID have been used'
                     })
                 }
-            }).catch(function(error) {
+            }).catch(function (error) {
                 console.log(error)
                 res.send({
                     errorCode: 1,
@@ -63,8 +64,8 @@ router.post('/register', [
 );
 
 router.post('/login', [
-        check('token').not().isEmpty(),
-    ],
+    check('token').not().isEmpty(),
+],
     async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
@@ -73,14 +74,14 @@ router.post('/login', [
         const { token } = req.body;
         // Verify token comes from the client app
         admin.auth().verifyIdToken(token)
-            .then(async function(decodedToken) {
+            .then(async function (decodedToken) {
                 let uid = decodedToken.uid;
                 // Find user with uid
                 const user = await User.findOne({ uid: uid });
                 if (user) {
                     let privateKey = fs.readFileSync(path.join(__dirname, '../configs/jwtRS256.key'), 'utf8');
-                    let token = jwt.sign({user: user}, privateKey, { algorithm: 'RS256'});
-                    res.send({user, token});
+                    let token = jwt.sign({ user: user }, privateKey, { algorithm: 'RS256' });
+                    res.send({ user, token });
                 } else {
                     // Login failed
                     res.send({
@@ -88,8 +89,8 @@ router.post('/login', [
                         errorMessage: 'Phone number has not registered yet'
                     })
                 }
-                
-            }).catch(function(error) {
+
+            }).catch(function (error) {
                 console.log(error)
                 res.send({
                     errorCode: 1,
@@ -99,11 +100,11 @@ router.post('/login', [
     }
 );
 
-router.post('/login-with-fb',[
-        check('token').not().isEmpty(),
-        check('name').not().isEmpty(),
-    ],
-    async (req, res) => { 
+router.post('/login-with-fb', [
+    check('token').not().isEmpty(),
+    check('name').not().isEmpty(),
+],
+    async (req, res) => {
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
             return res.status(422).json({ errors: errors.array() });
@@ -111,14 +112,14 @@ router.post('/login-with-fb',[
         const { token, name, email } = req.body;
         // Verify token comes from the client app
         admin.auth().verifyIdToken(token)
-            .then(async function(decodedToken) {
+            .then(async function (decodedToken) {
                 let uid = decodedToken.uid;
                 // Find user with uid
                 const user = await User.findOne({ uid: uid });
                 if (user) {
                     let privateKey = fs.readFileSync(path.join(__dirname, '../configs/jwtRS256.key'), 'utf8');
-                    let token = jwt.sign({user: user}, privateKey, { algorithm: 'RS256'});
-                    res.send({user, token});
+                    let token = jwt.sign({ user: user }, privateKey, { algorithm: 'RS256' });
+                    res.send({ user, token });
                 } else {
                     // Login failed, create one account with decoded uid
                     // Create new user with uid, phone, name and email
@@ -129,11 +130,11 @@ router.post('/login-with-fb',[
                     });
                     await newUser.save();
                     let privateKey = fs.readFileSync(path.join(__dirname, '../configs/jwtRS256.key'), 'utf8');
-                    let token = jwt.sign({user: user}, privateKey, { algorithm: 'RS256'});
-                    res.send({user: newUser, token});
+                    let token = jwt.sign({ user: user }, privateKey, { algorithm: 'RS256' });
+                    res.send({ user: newUser, token });
                 }
-                
-            }).catch(function(error) {
+
+            }).catch(function (error) {
                 console.log(error)
                 res.send({
                     errorCode: 1,
@@ -147,8 +148,73 @@ router.get('/auth/me', authMiddleware,
     async (req, res) => {
         const requestUser = req.user;
         const user = await User.findById(requestUser._id);
-        res.send({user});
+        res.send({ user });
     }
 );
+
+router.post('/register-admin', [
+    check('password').not().isEmpty(),
+    check('email').not().isEmpty(),
+    check('name').not().isEmpty(),
+],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.array() });
+        }
+        try {
+            const { password, email } = req.body;
+            let hash = bcrypt.hashSync(password);
+            var user = new User({
+                password: hash,
+                email,
+                name,
+            });
+            await user.save();
+            let privateKey = fs.readFileSync(path.join(__dirname, '../configs/jwtRS256.key'), 'utf8');
+            let token = jwt.sign({ user: user }, privateKey, { algorithm: 'RS256' });
+            res.send({ user, token });
+        } catch (e) {
+            console.log(e);
+        }
+    }
+);
+
+router.post('/login-admin', [
+    check('password').not().isEmpty(),
+    check('email').not().isEmpty(),
+],
+    async (req, res) => {
+        try {
+            const { email, password } = req.body;
+            const user = await User.findOne({ email: email });
+            if (!user) {
+                res.status(401).send({
+                    errorCode: 1,
+                    errorMessage: 'Can not login'
+                });
+            } else {
+                let isMatch = await bcrypt.compare(password, user.password);
+                if (isMatch) {
+                    let privateKey = fs.readFileSync(path.join(__dirname, '../configs/jwtRS256.key'), 'utf8');
+                    let token = jwt.sign({ user: user }, privateKey, { algorithm: 'RS256' });
+                    res.send({ user, token });
+                } else {
+                    res.status(401).send({
+                        errorCode: 1,
+                        errorMessage: 'Can not login'
+                    });
+                }
+            }
+        } catch (e) {
+            console.log(e);
+            res.status(401).send({
+                errorCode: 1,
+                errorMessage: 'Can not login'
+            });
+        }
+    }
+);
+
 
 module.exports = router;

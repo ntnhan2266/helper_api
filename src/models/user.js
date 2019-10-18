@@ -1,11 +1,12 @@
 const mongoose = require('mongoose');
 const validator = require('validator');
+const CONSTANTS = require('../utils/constants');
 
 const userSchema = new mongoose.Schema({
     uid: {
         type: String,
         unique: true,
-        required: true,
+        required: false,
         trim: true,
         lowercase: true
     },
@@ -62,8 +63,25 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: false,
         default: null
-    }
-}, {timestamps: true});
+    },
+    isActive: {
+        type: Boolean,
+        default: true,
+    },
+    isConfirm: {
+        type: Boolean,
+        default: false,
+    },
+    password: {
+        type: String,
+        default: null,
+        required: false,
+    },
+    role: {
+        type: Number,
+        default: CONSTANTS.ROLE.STANDARD
+    },
+}, { timestamps: true });
 
 const User = mongoose.model('User', userSchema)
 
