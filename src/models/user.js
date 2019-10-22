@@ -5,10 +5,11 @@ const CONSTANTS = require('../utils/constants');
 const userSchema = new mongoose.Schema({
     uid: {
         type: String,
-        unique: true,
-        required: false,
         trim: true,
-        lowercase: true
+        lowercase: true,
+        sparse: true,
+        default: null,
+        unique: true,
     },
     name: {
         type: String,
@@ -81,6 +82,14 @@ const userSchema = new mongoose.Schema({
         type: Number,
         default: CONSTANTS.ROLE.STANDARD
     },
+    code: {
+        type: String,
+        default: null,
+    },
+    expiredAt: {
+        default: null,
+        type: Date
+    }
 }, { timestamps: true });
 
 const User = mongoose.model('User', userSchema)

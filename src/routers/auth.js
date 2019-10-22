@@ -5,10 +5,25 @@ const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const Email = require('email-templates');
+const nodemailer = require('nodemailer');
+const moment = require('moment');
 
 const User = require('../models/user');
 const authMiddleware = require('../middleware/auth');
 const router = new express.Router();
+
+const saltRounds = 10;
+
+const makeid = (length) => {
+    let result = '';
+    let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let charactersLength = characters.length;
+    for (let i = 0; i < length; i++) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+};
 
 router.get('/', (req, res) => {
     console.log(req)
@@ -155,7 +170,7 @@ router.get('/auth/me', authMiddleware,
 router.post('/register-admin', [
     check('password').not().isEmpty(),
     check('email').not().isEmpty(),
-    check('name').not().isEmpty(),
+    check('fullname').not().isEmpty(),
 ],
     async (req, res) => {
         const errors = validationResult(req);
@@ -163,12 +178,13 @@ router.post('/register-admin', [
             return res.status(422).json({ errors: errors.array() });
         }
         try {
-            const { password, email } = req.body;
-            let hash = bcrypt.hashSync(password);
+            const { fullname, password, email } = req.body;
+            let hash = await bcrypt.hash(password, saltRounds);
             var user = new User({
                 password: hash,
                 email,
-                name,
+                name: fullname,
+                uid: makeid(12)
             });
             await user.save();
             let privateKey = fs.readFileSync(path.join(__dirname, '../configs/jwtRS256.key'), 'utf8');
@@ -176,6 +192,10 @@ router.post('/register-admin', [
             res.send({ user, token });
         } catch (e) {
             console.log(e);
+            res.send({
+                errorCode: 1,
+                errorMessage: 'Duplicate email'
+            });
         }
     }
 );
@@ -185,6 +205,10 @@ router.post('/login-admin', [
     check('email').not().isEmpty(),
 ],
     async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(422).json({ errors: errors.array() });
+        }
         try {
             const { email, password } = req.body;
             const user = await User.findOne({ email: email });
@@ -215,6 +239,75 @@ router.post('/login-admin', [
         }
     }
 );
+
+router.post('/forgot-password', [
+    check('email').not().isEmpty(),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+    }
+    try {
+        const userEmail = req.body.email;
+        const user = await User.findOne({ email: userEmail });
+        if (!user) {
+            return res.send({ sent: true });
+        }
+        const expiredTime = new Date(user.expiredAt);
+        const now = new Date();
+        // Check is have old token
+        if (user.code && expiredTime.getTime() > now.getTime()) {
+            return res.send({ sent: true });
+        }
+        const transporter = nodemailer.createTransport({
+            host: 'smtp.mailtrap.io',
+            port: 2525,
+            secure: false,
+            auth: {
+                user: "6f204fbdb15dd0",
+                pass: "36a535f5da7793"
+            }
+        });
+        
+        // Generate token and save to database
+        const expiredAt = moment().add(3, 'd');
+        const token = makeid(64);
+        user.code = token;
+        user.expiredAt = expiredAt;
+        await user.save();
+        
+        // Send email to user
+        const root = path.join(__dirname, '../emails');
+        const email = new Email({
+            transport: transporter,
+            send: true,
+            preview: false,
+            views: { root },
+        });
+
+        const url = `http://localhost:4200/reset-password/${token}`;
+
+        await email.send({
+            template: 'forgot-password',
+            message: {
+                from: 'Smart Rabbit <no-reply@rabbit.com>',
+                to: userEmail,
+            },
+            locals: {
+                name: user.name,
+                url: url,
+            }
+        });
+        console.log('Email has been sent!');
+        res.send({ sent: true });
+    } catch (e) {
+        console.log(e);
+        res.status(401).send({
+            errorCode: 1,
+            errorMessage: 'Can not send email'
+        });
+    }
+});
 
 
 module.exports = router;
