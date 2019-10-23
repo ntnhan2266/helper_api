@@ -10,6 +10,7 @@ const nodemailer = require('nodemailer');
 const moment = require('moment');
 
 const User = require('../models/user');
+const Constant = require('../utils/constants');
 const authMiddleware = require('../middleware/auth');
 const router = new express.Router();
 
@@ -213,18 +214,18 @@ router.post('/login-admin', [
             const { email, password } = req.body;
             const user = await User.findOne({ email: email });
             if (!user) {
-                res.status(401).send({
+                res.send({
                     errorCode: 1,
                     errorMessage: 'Can not login'
                 });
             } else {
                 let isMatch = await bcrypt.compare(password, user.password);
-                if (isMatch) {
+                if (isMatch && user.isActive && user.role == Constant.ROLE.ADMIN) {
                     let privateKey = fs.readFileSync(path.join(__dirname, '../configs/jwtRS256.key'), 'utf8');
                     let token = jwt.sign({ user: user }, privateKey, { algorithm: 'RS256' });
-                    res.send({ user, token });
+                    res.send({ user: {id: user._id, name: user.name, avatar: user.avatar,}, token });
                 } else {
-                    res.status(401).send({
+                    res.send({
                         errorCode: 1,
                         errorMessage: 'Can not login'
                     });
@@ -232,7 +233,7 @@ router.post('/login-admin', [
             }
         } catch (e) {
             console.log(e);
-            res.status(401).send({
+            res.send({
                 errorCode: 1,
                 errorMessage: 'Can not login'
             });
@@ -285,7 +286,7 @@ router.post('/forgot-password', [
             views: { root },
         });
 
-        const url = `http://localhost:4200/reset-password/${token}`;
+        const url = `http://localhost:4200/#/reset-password/${token}`;
 
         await email.send({
             template: 'forgot-password',
@@ -302,9 +303,50 @@ router.post('/forgot-password', [
         res.send({ sent: true });
     } catch (e) {
         console.log(e);
-        res.status(401).send({
+        res.send({
             errorCode: 1,
             errorMessage: 'Can not send email'
+        });
+    }
+});
+
+router.post('/reset-password', [
+    check('token').not().isEmpty(),
+    check('password').not().isEmpty(),
+], async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(422).json({ errors: errors.array() });
+    }
+    try {
+        const {token, password} = req.body;
+        const user = await User.findOne({code: token});
+        if (!user) {
+            return res.send({
+                errorCode: 1,
+                errorMessage: 'Invalid token'
+            });
+        }
+        const expiredTime = new Date(user.expiredAt);
+        const now = new Date();
+        // Check expire time
+        if (expiredTime.getTime() < now.getTime()) {
+            return res.send({
+                errorCode: 2,
+                errorMessage: 'Expired token'
+            });
+        }
+        let hash = await bcrypt.hash(password, saltRounds);
+        user.password = hash;
+        user.code = null;
+        user.expiredAt = null;
+        await user.save();
+        return res.send({updated: true});
+    } catch (e) {
+        console.log(e);
+        res.send({
+            errorCode: 1,
+            errorMessage: 'Invalid token'
         });
     }
 });
