@@ -115,21 +115,28 @@ router.get("/bookings", authMiddleware, async (req, res) => {
       status: status
     })
       .populate("createdBy")
+      .populate({
+        path: "maid",
+        populate: {
+          path: "user",
+          select: "name avatar birthday gender phoneNumber address"
+        }
+      })
       .skip(pageIndex * pageSize)
       .limit(pageSize);
-    const maidIds = bookings.map(booking => {
-      return mongoose.Types.ObjectId(booking.maid);
-    });
-    let maids = await Maid.find({ _id: { $in: maidIds } }).populate({
-      path: "user",
-      select: "name avatar birthday gender phoneNumber address"
-    });
-    maids = _.keyBy(maids, "_id");
-    for (let i = 0; i < bookings.length; i++) {
-      if (maids[bookings[i].maid]) {
-        bookings[i].maid = maids[bookings[i].maid];
-      }
-    }
+    // const maidIds = bookings.map(booking => {
+    //   return mongoose.Types.ObjectId(booking.maid);
+    // });
+    // let maids = await Maid.find({ _id: { $in: maidIds } }).populate({
+    //   path: "user",
+    //   select: "name avatar birthday gender phoneNumber address"
+    // });
+    // maids = _.keyBy(maids, "_id");
+    // for (let i = 0; i < bookings.length; i++) {
+    //   if (maids[bookings[i].maid]) {
+    //     bookings[i].maid = maids[bookings[i].maid];
+    //   }
+    // }
     const total = await Booking.countDocuments({
       createdBy: requestUser._id,
       status: status
@@ -224,8 +231,9 @@ router.post("/booking/cancel", authMiddleware, async (req, res) => {
   const content = req.body.content;
   const requestUser = req.user;
   try {
-    const maid = await Maid.findOne({ user: requestUser._id });
-    const booking = await Booking.findOne({ maid: maid._id, _id: bookingId });
+    // const maid = await Maid.findOne({ user: requestUser._id });
+    // const booking = await Booking.findOne({ maid: maid._id, _id: bookingId });
+    const booking = await Booking.findOne({ createdBy: requestUser._id, _id: bookingId });
     // Has access
     // Approve
     booking.status = Contants.BOOKING_STATUS.CANCELLED;
