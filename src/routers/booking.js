@@ -1,5 +1,7 @@
+const admin = require("firebase-admin")
 const express = require("express");
 
+const Notification = require("../models/notification");
 const Booking = require("../models/booking");
 const Maid = require("../models/maid");
 const Interval = require("../models/interval");
@@ -26,6 +28,41 @@ const calculateAmount = (type, interval, startTime, endTime, salaryPerHour) => {
   return price;
 };
 
+const addNotification = async (booking, userId, userName, status) => {
+  var notification = new Notification();
+  notification.booking = booking;
+  await notification.save();
+
+  // send notification
+  const querySnapshot = await admin.firestore()
+    .collection('users')
+    .doc(userId + '')
+    .collection('tokens')
+    .get();
+  const registrationTokens = querySnapshot.docs.map(doc => doc.id);
+  console.log(registrationTokens)
+  var message = {
+    notification: {
+      title: 'Smart Rabbit',
+      body: 'Smart Rabbit',
+    },
+    data: {
+      status: status + '',
+      category: booking.category + '',
+      name: userName + '',
+      message: 'message',
+    },
+    tokens: registrationTokens
+  };
+  admin.messaging().sendMulticast(message)
+    .then((response) => {
+      console.log('Successfully sent message:', response);
+    })
+    .catch((error) => {
+      console.log('Error sending message:', error);
+    });
+}
+
 router.post("/booking", authMiddleware, async (req, res) => {
   try {
     const body = req.body;
@@ -43,7 +80,11 @@ router.post("/booking", authMiddleware, async (req, res) => {
     booking.endDate = new Date(body.endDate);
     booking.maid = body.maid;
     booking.createdBy = req.user._id;
-    const maid = await Maid.findById(body.maid);
+    const maid = await Maid.findById(body.maid)
+      .populate({
+        path: "user",
+        select: "_id name"
+      });
     let amount = calculateAmount(
       body.type,
       body.workingDates,
@@ -65,6 +106,10 @@ router.post("/booking", authMiddleware, async (req, res) => {
       booking.interval = interval.id;
     }
     await booking.save();
+
+    //send noti to helper
+    addNotification(booking, maid.user._id, maid.user.name, 1)
+
     res.send({ booking });
   } catch (e) {
     console.log(e);
