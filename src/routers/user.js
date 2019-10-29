@@ -4,6 +4,7 @@ const User = require("../models/user");
 const authMiddleware = require("../middleware/auth");
 const adminMiddleware = require("../middleware/admin");
 const router = new express.Router();
+const CONSTANTS = require('../utils/constants');
 
 router.post("/user/edit", authMiddleware, async (req, res) => {
   try {
@@ -29,13 +30,12 @@ router.post("/user/edit", authMiddleware, async (req, res) => {
   }
 });
 
-router.get("/users", async (req, res) => {
+router.get("/users", adminMiddleware, async (req, res) => {
   try {
     const pageIndex = req.query.pageIndex * 1;
     const pageSize = req.query.pageSize * 1;
     const query = req.query.query;
     const projection = {
-      _id: 0,
       name: 1,
       email: 1,
       gender: 1,
@@ -49,7 +49,8 @@ router.get("/users", async (req, res) => {
         $or: [
           { name: new RegExp(query, "i") },
           { email: new RegExp(query, "i") }
-        ]
+        ],
+        role: CONSTANTS.ROLE.STANDARD
       },
       projection
     )
@@ -57,9 +58,10 @@ router.get("/users", async (req, res) => {
       .limit(pageSize);
     const total = await User.countDocuments({
       $or: [
-        { name: new RegExp("^" + query + "$", "i") },
-        { email: new RegExp("^" + query + "$", "i") }
-      ]
+        { name: new RegExp(query, "i") },
+        { email: new RegExp(query, "i") }
+      ],
+      role: CONSTANTS.ROLE.STANDARD
     });
     return res.send({ users, total });
   } catch (e) {
@@ -67,6 +69,52 @@ router.get("/users", async (req, res) => {
     return res.send({
       errorCode: 1,
       errorMessage: "Failed to load data"
+    });
+  }
+});
+
+router.put('/user/active', adminMiddleware, async (req, res) => {
+  try {
+    const id = req.body.id;
+    const user = await User.findById(id);
+    if (!user) {
+      console.log('Can find user with id: ' + id);
+      return res.send({
+        errorCode: 1,
+        errorMessage: "Can find user"
+      });
+    }
+    user.isActive = true;
+    await user.save();
+    return res.send({ completed: true });
+  } catch (e) {
+    console.log(e);
+    return res.send({
+      errorCode: 1,
+      errorMessage: "Can find user"
+    });
+  }
+});
+
+router.put('/user/deactive', adminMiddleware, async (req, res) => {
+  try {
+    const id = req.body.id;
+    const user = await User.findById(id);
+    if (!user) {
+      console.log('Can find user with id: ' + id);
+      return res.send({
+        errorCode: 1,
+        errorMessage: "Can find user"
+      });
+    }
+    user.isActive = false;
+    await user.save();
+    return res.send({ completed: true });
+  } catch (e) {
+    console.log(e);
+    return res.send({
+      errorCode: 1,
+      errorMessage: "Can find user"
     });
   }
 });
