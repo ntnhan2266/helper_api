@@ -1,5 +1,9 @@
 const admin = require("firebase-admin")
 const express = require("express");
+const router = new express.Router();
+const mongoose = require("mongoose");
+const _ = require("lodash");
+const moment = require("moment");
 
 const Notification = require("../models/notification");
 const Booking = require("../models/booking");
@@ -7,11 +11,7 @@ const Maid = require("../models/maid");
 const Interval = require("../models/interval");
 const Contants = require("../utils/constants");
 const authMiddleware = require("../middleware/auth");
-const router = new express.Router();
-const mongoose = require("mongoose");
-const _ = require("lodash");
-const moment = require("moment");
-
+const adminMiddleware = require("../middleware/admin");
 
 const calculateAmount = (type, interval, startTime, endTime, salaryPerHour) => {
   let price = 0;
@@ -160,28 +160,21 @@ router.get("/bookings", authMiddleware, async (req, res) => {
       status: status
     })
       .populate("createdBy")
-      .populate({
-        path: "maid",
-        populate: {
-          path: "user",
-          select: "name avatar birthday gender phoneNumber address"
-        }
-      })
       .skip(pageIndex * pageSize)
       .limit(pageSize);
-    // const maidIds = bookings.map(booking => {
-    //   return mongoose.Types.ObjectId(booking.maid);
-    // });
-    // let maids = await Maid.find({ _id: { $in: maidIds } }).populate({
-    //   path: "user",
-    //   select: "name avatar birthday gender phoneNumber address"
-    // });
-    // maids = _.keyBy(maids, "_id");
-    // for (let i = 0; i < bookings.length; i++) {
-    //   if (maids[bookings[i].maid]) {
-    //     bookings[i].maid = maids[bookings[i].maid];
-    //   }
-    // }
+    const maidIds = bookings.map(booking => {
+      return mongoose.Types.ObjectId(booking.maid);
+    });
+    let maids = await Maid.find({ _id: { $in: maidIds } }).populate({
+      path: "user",
+      select: "name avatar birthday gender phoneNumber address"
+    });
+    maids = _.keyBy(maids, "_id");
+    for (let i = 0; i < bookings.length; i++) {
+      if (maids[bookings[i].maid]) {
+        bookings[i].maid = maids[bookings[i].maid];
+      }
+    }
     const total = await Booking.countDocuments({
       createdBy: requestUser._id,
       status: status
@@ -303,6 +296,58 @@ router.post("/booking/reject", authMiddleware, async (req, res) => {
     // Has access
     // Approve
     booking.status = Contants.BOOKING_STATUS.REJECTED;
+    booking.reason = reason;
+    booking.content = content;
+    await booking.save();
+    res.send({ completed: true });
+  } catch (e) {
+    console.log(e);
+    res.status(401).send({ completed: false });
+  }
+});
+
+router.get('/bookings/list', adminMiddleware, async (req, res) => {
+  try {
+    const pageIndex = req.query.pageIndex * 1;
+    const pageSize = req.query.pageSize * 1;
+    console.log()
+    const bookings = await Booking.find()
+      .populate("createdBy")
+      .skip(pageIndex * pageSize)
+      .limit(pageSize);
+    const maidIds = bookings.map(booking => {
+      return mongoose.Types.ObjectId(booking.maid);
+    });
+    let maids = await Maid.find({ _id: { $in: maidIds } }).populate({
+      path: "user",
+      select: "name avatar birthday gender phoneNumber address"
+    });
+    maids = _.keyBy(maids, "_id");
+    for (let i = 0; i < bookings.length; i++) {
+      if (maids[bookings[i].maid]) {
+        bookings[i].maid = maids[bookings[i].maid];
+      }
+    }
+    const total = await Booking.countDocuments({});
+    return res.send({ bookings, total });
+  } catch (e) {
+    console.log(e);
+    return res.send({
+      errorCode: 1,
+      errorMessage: "Failed to load data"
+    });
+  }
+});
+
+router.post("/booking/admin-cancel", adminMiddleware, async (req, res) => {
+  const bookingId = req.body.id;
+  const reason = 5;
+  const content = req.body.content;
+  try {
+    const booking = await Booking.findOne({ _id: bookingId });
+    // Has access
+    // Approve
+    booking.status = Contants.BOOKING_STATUS.CANCELLED;
     booking.reason = reason;
     booking.content = content;
     await booking.save();
