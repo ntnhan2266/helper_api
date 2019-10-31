@@ -310,7 +310,6 @@ router.get('/bookings/list', adminMiddleware, async (req, res) => {
   try {
     const pageIndex = req.query.pageIndex * 1;
     const pageSize = req.query.pageSize * 1;
-    console.log()
     const bookings = await Booking.find()
       .populate("createdBy")
       .skip(pageIndex * pageSize)
@@ -339,7 +338,7 @@ router.get('/bookings/list', adminMiddleware, async (req, res) => {
   }
 });
 
-router.post("/booking/admin-cancel", adminMiddleware, async (req, res) => {
+router.put("/booking/admin-cancel", adminMiddleware, async (req, res) => {
   const bookingId = req.body.id;
   const reason = 5;
   const content = req.body.content;
