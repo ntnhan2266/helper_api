@@ -9,7 +9,6 @@ const bookingSchema = new mongoose.Schema(
     },
     category: {
       type: Number,
-      required: true
     },
     address: {
       type: String,
