@@ -6,13 +6,13 @@ const path = require('path');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const Email = require('email-templates');
-const nodemailer = require('nodemailer');
 const moment = require('moment');
 
 const User = require('../models/user');
 const Constant = require('../utils/constants');
 const authMiddleware = require('../middleware/auth');
 const router = new express.Router();
+const email = require('../configs/email');
 
 const saltRounds = 10;
 
@@ -260,15 +260,6 @@ router.post('/forgot-password', [
         if (user.code && expiredTime.getTime() > now.getTime()) {
             return res.send({ sent: true });
         }
-        const transporter = nodemailer.createTransport({
-            host: 'smtp.mailtrap.io',
-            port: 2525,
-            secure: false,
-            auth: {
-                user: "6f204fbdb15dd0",
-                pass: "36a535f5da7793"
-            }
-        });
         
         // Generate token and save to database
         const expiredAt = moment().add(3, 'd');
@@ -278,16 +269,7 @@ router.post('/forgot-password', [
         await user.save();
         
         // Send email to user
-        const root = path.join(__dirname, '../emails');
-        const email = new Email({
-            transport: transporter,
-            send: true,
-            preview: false,
-            views: { root },
-        });
-
         const url = `http://localhost:4200/#/reset-password/${token}`;
-
         await email.send({
             template: 'forgot-password',
             message: {
@@ -299,7 +281,7 @@ router.post('/forgot-password', [
                 url: url,
             }
         });
-        console.log('Email has been sent!');
+
         res.send({ sent: true });
     } catch (e) {
         console.log(e);

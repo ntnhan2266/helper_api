@@ -7,11 +7,13 @@ const moment = require("moment");
 
 const Notification = require("../models/notification");
 const Booking = require("../models/booking");
+const Transaction = require("../models/transaction");
 const Maid = require("../models/maid");
 const Interval = require("../models/interval");
-const Contants = require("../utils/constants");
+const Constants = require("../utils/constants");
 const authMiddleware = require("../middleware/auth");
 const adminMiddleware = require("../middleware/admin");
+const transporter = require('../configs/email');
 
 const calculateAmount = (type, interval, startTime, endTime, salaryPerHour) => {
   let price = 0;
@@ -30,15 +32,15 @@ const calculateAmount = (type, interval, startTime, endTime, salaryPerHour) => {
 
 const statusToMessage = (status) => {
   switch (status) {
-    case Contants.BOOKING_STATUS.WAITING_APPROVE:
+    case Constants.BOOKING_STATUS.WAITING_APPROVE:
       return 'noti_message_waiting';
-    case Contants.BOOKING_STATUS.APPROVED:
+    case Constants.BOOKING_STATUS.APPROVED:
       return 'noti_message_approved';
-    case Contants.BOOKING_STATUS.COMPLETED:
+    case Constants.BOOKING_STATUS.COMPLETED:
       return 'noti_message_completed';
-    case Contants.BOOKING_STATUS.REJECTED:
+    case Constants.BOOKING_STATUS.REJECTED:
       return 'noti_message_rejected';
-    case Contants.BOOKING_STATUS.CANCELLED:
+    case Constants.BOOKING_STATUS.CANCELLED:
       return 'noti_message_canceled';
     default: return '';
   }
@@ -120,7 +122,7 @@ router.post("/booking", authMiddleware, async (req, res) => {
     await booking.save();
 
     //send notification from user to helper
-    addNotification(booking, req.user, maid.user, Contants.BOOKING_STATUS.WAITING_APPROVE);
+    addNotification(booking, req.user, maid.user, Constants.BOOKING_STATUS.WAITING_APPROVE);
 
     res.send({ booking });
   } catch (e) {
@@ -163,8 +165,8 @@ router.get("/booking", authMiddleware, async (req, res) => {
 router.get("/bookings", authMiddleware, async (req, res) => {
   try {
     // Filter
-    const status = req.query.status == Contants.BOOKING_STATUS.CANCELLED || req.query.status == Contants.BOOKING_STATUS.REJECTED
-      ? [Contants.BOOKING_STATUS.CANCELLED, Contants.BOOKING_STATUS.REJECTED]
+    const status = req.query.status == Constants.BOOKING_STATUS.CANCELLED || req.query.status == Constants.BOOKING_STATUS.REJECTED
+      ? [Constants.BOOKING_STATUS.CANCELLED, Constants.BOOKING_STATUS.REJECTED]
       : [req.query.status];
     const pageSize = req.query.pageSize ? req.query.pageSize * 1 : 12;
     const pageIndex = req.query.pageIndex ? req.query.pageIndex * 1 : 0;
@@ -206,8 +208,8 @@ router.get("/bookings", authMiddleware, async (req, res) => {
 router.get("/bookings/host", authMiddleware, async (req, res) => {
   try {
     // Filter
-    const status = req.query.status == Contants.BOOKING_STATUS.CANCELLED || req.query.status == Contants.BOOKING_STATUS.REJECTED
-      ? [Contants.BOOKING_STATUS.CANCELLED, Contants.BOOKING_STATUS.REJECTED]
+    const status = req.query.status == Constants.BOOKING_STATUS.CANCELLED || req.query.status == Constants.BOOKING_STATUS.REJECTED
+      ? [Constants.BOOKING_STATUS.CANCELLED, Constants.BOOKING_STATUS.REJECTED]
       : [req.query.status];
     const pageSize = req.query.pageSize ? req.query.pageSize : 12;
     const pageIndex = req.query.pageIndex ? req.query.pageIndex : 0;
@@ -255,11 +257,11 @@ router.put("/booking/approve", authMiddleware, async (req, res) => {
     const booking = await Booking.findOne({ maid: maid._id, _id: bookingId });
     // Has access
     // Approve
-    booking.status = Contants.BOOKING_STATUS.APPROVED;
+    booking.status = Constants.BOOKING_STATUS.APPROVED;
     await booking.save();
 
     //send notification from helper to user
-    addNotification(booking, maid.user, req.user, Contants.BOOKING_STATUS.APPROVED)
+    addNotification(booking, maid.user, req.user, Constants.BOOKING_STATUS.APPROVED)
 
     res.send({ completed: true });
   } catch (e) {
@@ -276,11 +278,21 @@ router.put("/booking/complete", authMiddleware, async (req, res) => {
     const booking = await Booking.findOne({ maid: maid._id, _id: bookingId });
     // Has access
     // Approve
-    booking.status = Contants.BOOKING_STATUS.COMPLETED;
+    booking.status = Constants.BOOKING_STATUS.COMPLETED;
     booking.completedAt = new Date();
 
     //send notification from helper to user
-    addNotification(booking, maid.user, req.user, Contants.BOOKING_STATUS.COMPLETED)
+    addNotification(booking, maid.user, req.user, Constants.BOOKING_STATUS.COMPLETED)
+    // Add transaction for this booking
+    const transaction = new Transaction();
+    transaction.booking = booking._id;
+    transaction.amount = booking.amount;
+    transaction.maid = booking.maid;
+    transaction.user = booking.user;
+    transaction.status = Constants.TRANSATION_STATUS.WAITING;
+    await transaction.save();
+
+    // Send email
 
     await booking.save();
     res.send({ completed: true });
@@ -306,13 +318,13 @@ router.post("/booking/cancel", authMiddleware, async (req, res) => {
       });
     // Has access
     // Approve
-    booking.status = Contants.BOOKING_STATUS.CANCELLED;
+    booking.status = Constants.BOOKING_STATUS.CANCELLED;
     booking.reason = reason;
     booking.content = content;
     await booking.save();
 
     //send notification from user to helper
-    addNotification(booking, req.user, booking.maid.user, Contants.BOOKING_STATUS.CANCELLED);
+    addNotification(booking, req.user, booking.maid.user, Constants.BOOKING_STATUS.CANCELLED);
 
     res.send({ completed: true });
   } catch (e) {
@@ -332,12 +344,12 @@ router.post("/booking/reject", authMiddleware, async (req, res) => {
       .populate("createdBy");
     // Has access
     // Approve
-    booking.status = Contants.BOOKING_STATUS.REJECTED;
+    booking.status = Constants.BOOKING_STATUS.REJECTED;
     booking.reason = reason;
     booking.content = content;
 
     //send notification from helper to user
-    addNotification(booking, req.user, booking.createdBy, Contants.BOOKING_STATUS.REJECTED);
+    addNotification(booking, req.user, booking.createdBy, Constants.BOOKING_STATUS.REJECTED);
 
     await booking.save();
     res.send({ completed: true });
@@ -387,7 +399,7 @@ router.put("/booking/admin-cancel", adminMiddleware, async (req, res) => {
     const booking = await Booking.findOne({ _id: bookingId });
     // Has access
     // Approve
-    booking.status = Contants.BOOKING_STATUS.CANCELLED;
+    booking.status = Constants.BOOKING_STATUS.CANCELLED;
     booking.reason = reason;
     booking.content = content;
     await booking.save();
