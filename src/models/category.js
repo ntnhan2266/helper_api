@@ -5,11 +5,11 @@ const categorySchema = new mongoose.Schema({
         type: String,
         default: null
     },
-    name_vi: {
+    nameVi: {
         type: String,
         required: true
     },
-    name_en: {
+    nameEn: {
         type: String,
         required: true
     },

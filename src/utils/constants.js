@@ -1,6 +1,6 @@
-const Contants = {};
+const Constants = {};
 
-const BOOKING_STATUS = {
+Constants.BOOKING_STATUS = {
     WAITING_APPROVE: 1,
     APPROVED: 2,
     COMPLETED: 3,
@@ -8,10 +8,10 @@ const BOOKING_STATUS = {
     REJECTED: 5
 };
 
-const ROLE = {
+Constants.ROLE = {
     ADMIN: 2,
     STANDARD: 1
-}
+};
 
 const statusToMessage = (status) => {
     switch (status) {
@@ -32,5 +32,9 @@ const statusToMessage = (status) => {
 Contants.BOOKING_STATUS = BOOKING_STATUS;
 Contants.ROLE = ROLE;
 Contants.MESSAGE = statusToMessage;
+Constants.TRANSATION_STATUS = {
+    WAITING: 1,
+    PAID: 2
+};
 
-module.exports = Contants;
+module.exports = Constants;
