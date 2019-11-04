@@ -7,6 +7,16 @@ const notificationSchema = new mongoose.Schema(
       ref: "Booking",
       required: true
     },
+    fromUser: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+    toUser: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
     status: {
       type: Number,
       default: 1
