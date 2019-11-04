@@ -28,21 +28,6 @@ const calculateAmount = (type, interval, startTime, endTime, salaryPerHour) => {
   return price;
 };
 
-const statusToMessage = (status) => {
-  switch (status) {
-    case Contants.BOOKING_STATUS.WAITING_APPROVE:
-      return 'noti_message_waiting';
-    case Contants.BOOKING_STATUS.APPROVED:
-      return 'noti_message_approved';
-    case Contants.BOOKING_STATUS.COMPLETED:
-      return 'noti_message_completed';
-    case Contants.BOOKING_STATUS.REJECTED:
-      return 'noti_message_rejected';
-    case Contants.BOOKING_STATUS.CANCELLED:
-      return 'noti_message_canceled';
-    default: return '';
-  }
-}
 
 const addNotification = async (booking, fromUser, toUser, status) => {
   var notification = new Notification();
@@ -66,7 +51,7 @@ const addNotification = async (booking, fromUser, toUser, status) => {
     data: {
       category: booking.category + '',
       name: fromUser.name + '',
-      message: statusToMessage(status),
+      message: Contants.MESSAGE(status),
     },
     tokens: registrationTokens
   };
