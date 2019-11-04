@@ -13,7 +13,7 @@ Constants.ROLE = {
     STANDARD: 1
 };
 
-const statusToMessage = (status) => {
+Constants.MESSAGE = (status) => {
     switch (status) {
         case Contants.BOOKING_STATUS.WAITING_APPROVE:
             return 'noti_message_waiting';
@@ -27,11 +27,8 @@ const statusToMessage = (status) => {
             return 'noti_message_canceled';
         default: return '';
     }
-}
+};
 
-Contants.BOOKING_STATUS = BOOKING_STATUS;
-Contants.ROLE = ROLE;
-Contants.MESSAGE = statusToMessage;
 Constants.TRANSATION_STATUS = {
     WAITING: 1,
     PAID: 2
