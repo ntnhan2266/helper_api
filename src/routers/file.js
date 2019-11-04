@@ -7,12 +7,13 @@ const path = require('path');
 const saveFile = (filePath, realFile, publicPath, res) => {
     fs.writeFile(filePath, realFile, (err) => {
         if (err) {
-            res.send({
+            console.log(err);
+            return res.send({
                 errorCode: 1,
                 errorMessage: 'Unexpected error'
             });
         } else {
-            res.send({ path: publicPath });
+            return res.send({ path: publicPath });
         }
     });
 }
@@ -26,15 +27,16 @@ router.post('/file/upload', authMiddleware, (req, res) => {
         const fileName = req.body.name;
         const ext = path.extname(fileName);
         const realFile = Buffer.from(img, "base64");
-        let dirPath = appRoot + '/public/upload/images/' + now.getFullYear() + '/' + now.getMonth() + '/' + now.getDate() + '/';
+        let dirPath = appRoot + '/public/upload/images/' + now.getFullYear() + '/' + (now.getMonth() + 1).toString() + '/' + now.getDate() + '/';
         let filePath = dirPath + '/' + name + ext;
-        const publicPath = '/public/upload/images/' + now.getFullYear() + '/' + now.getMonth() + '/' + now.getDate() + '/' + name + ext;
+        const publicPath = '/public/upload/images/' + now.getFullYear() + '/' + (now.getMonth() + 1).toString() + '/' + now.getDate() + '/' + name + ext;
         if (!fs.existsSync(dirPath)) {
             fs.mkdir(dirPath, { recursive: true }, (err) => {
                 if (!err) {
                     saveFile(filePath, realFile, publicPath, res);
                 } else {
-                    res.send({
+                    console.log(err);
+                    return res.send({
                         errorCode: 1,
                         errorMessage: 'Unexpected error'
                     });
@@ -44,11 +46,11 @@ router.post('/file/upload', authMiddleware, (req, res) => {
             saveFile(filePath, realFile, publicPath, res);
         }
     } catch (e) {
-        res.send({
+        console.log(e);
+        return res.send({
             errorCode: 1,
             errorMessage: 'Unexpected error'
         });
-        console.log(e);
     }
 });
 
