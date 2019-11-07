@@ -4,6 +4,7 @@ const Review = require("../models/review");
 const Maid = require('../models/maid')
 const Booking = require("../models/booking");
 const authMiddleware = require("../middleware/auth");
+const adminMiddleware = require("../middleware/admin");
 const router = new express.Router();
 const mongoose = require("mongoose");
 const _ = require("lodash");
@@ -65,8 +66,26 @@ router.get('/reviews', authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/reviews', authMiddleware, async (req, res) => {
-
+router.get('/reviews/list', adminMiddleware, async (req, res) => {
+  try {
+    const pageSize = req.query.pageSize * 1 || 10;
+    const pageIndex = req.query.pageIndex * 1 || 0;
+    const reviews = await Review.find({})
+      .populate('createdBy')
+      .skip(pageIndex * pageSize)
+      .limit(pageSize)
+      .sort([['createdAt', -1]]).lean().exec();
+    const total = await Review.countDocuments({});
+    res.send({ reviews, total });
+  } catch (e) {
+    console.log(e);
+    res.send({
+      errorCode: 1,
+      errorMessage: "Something went wrong"
+    });
+  }
 });
+
+r
 
 module.exports = router;
