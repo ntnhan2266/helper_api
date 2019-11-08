@@ -1,10 +1,11 @@
 const express = require("express");
+const router = new express.Router();
+const _ = require('lodash');
 
 const Maid = require("../models/maid");
 const Review = require('../models/review');
 const authMiddleware = require("../middleware/auth");
-const router = new express.Router();
-const _ = require('lodash');
+const adminMiddleware = require("../middleware/admin");
 
 router.get("/maid", authMiddleware, async (req, res) => {
   try {
@@ -75,10 +76,10 @@ router.post("/maid/edit", authMiddleware, async (req, res) => {
   }
 });
 
-router.get("/maids", async (req, res) => {
+router.get("/maids", authMiddleware, async (req, res) => {
   try {
-    const page = req.query.pageIndex ? req.query.pageIndex : 0;
-    const pageSize = req.query.pageSize ? req.query.pageSize : 10;
+    const page = req.query.pageIndex ? req.query.pageIndex * 1 : 0;
+    const pageSize = req.query.pageSize ? req.query.pageSize * 1 : 10;
     const maids = await Maid.find({}, null, { skip: page * pageSize, limit: pageSize }).populate({
       path: "user",
       select: "name avatar birthday gender phoneNumber address"

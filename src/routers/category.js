@@ -11,7 +11,7 @@ router.get("/categories", adminMiddleware, async (req, res) => {
         const pageIndex = req.query.pageIndex * 1;
         const pageSize = req.query.pageSize * 1;
         const categories = await Categories.find()
-            .sort({order: 1})
+            .sort({ order: 1 })
             .skip(pageIndex * pageSize)
             .limit(pageSize);
         const total = await Categories.countDocuments({});
@@ -103,6 +103,20 @@ router.put("/category/deactive", adminMiddleware, async (req, res) => {
         res.send({
             errorCode: 1,
             errorMessage: "Can not edit data"
+        });
+    }
+});
+
+router.delete("/category/delete", adminMiddleware, async (req, res) => {
+    try {
+        const id = req.query.id;
+        await Categories.deleteOne({ _id: id });
+        return res.send({ completed: true });
+    } catch (e) {
+        console.log(e);
+        res.send({
+            errorCode: 1,
+            errorMessage: "Can not delete data"
         });
     }
 });

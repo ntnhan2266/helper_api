@@ -34,4 +34,12 @@ Constants.TRANSATION_STATUS = {
     PAID: 2
 };
 
+Constants.LITERACY = {
+    OTHER: 1,
+    HIGH_SCHOOL: 2,
+    UNIVERSITY: 3,
+    COLLEGE: 4,
+    POST_GRADUATE: 5
+};
+
 module.exports = Constants;

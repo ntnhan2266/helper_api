@@ -86,6 +86,18 @@ router.get('/reviews/list', adminMiddleware, async (req, res) => {
   }
 });
 
-r
+router.delete('/reviews/delete', adminMiddleware, async (req, res) => {
+  try {
+    const id = req.query.id;
+    await Review.deleteOne({ _id: id });
+    return res.send({ completed: true });
+  } catch (e) {
+    console.log(e);
+    res.send({
+      errorCode: 1,
+      errorMessage: "Something went wrong"
+    });
+  }
+});
 
 module.exports = router;

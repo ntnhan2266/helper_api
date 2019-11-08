@@ -31,6 +31,10 @@ const maidSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         unique: true,
+    },
+    active: {
+        type: Boolean,
+        default: true,
     }
 }, {timestamps: true});
 
