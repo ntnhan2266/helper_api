@@ -80,10 +80,12 @@ router.get("/maids", authMiddleware, async (req, res) => {
   try {
     const page = req.query.pageIndex ? req.query.pageIndex * 1 : 0;
     const pageSize = req.query.pageSize ? req.query.pageSize * 1 : 10;
-    const maids = await Maid.find({}, null, { skip: page * pageSize, limit: pageSize }).populate({
-      path: "user",
-      select: "name avatar birthday gender phoneNumber address"
-    });
+    const maids = await Maid.find({}, null, { skip: page * pageSize, limit: pageSize })
+      .populate({
+        path: "user",
+        select: "name avatar birthday gender phoneNumber address"
+      })
+      .populate('jobTypes');
     const total = await Maid.countDocuments({});
     res.send({ maids, total });
   } catch (e) {
@@ -126,6 +128,10 @@ router.get("/maids/top-rating", authMiddleware, async (req, res) => {
       errorMessage: "Unexpected errors"
     });
   }
+});
+
+router.put('/maids/active', adminMiddleware, async (req, res) => {
+  
 });
 
 module.exports = router;

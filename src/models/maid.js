@@ -21,9 +21,10 @@ const maidSchema = new mongoose.Schema({
         required: true,
         default: 0,
     },
-    jobTypes: {
-        type: [Number],
-    },
+    jobTypes: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category'
+    }],
     supportAreas: {
         type: [Number],
     },
@@ -36,7 +37,7 @@ const maidSchema = new mongoose.Schema({
         type: Boolean,
         default: true,
     }
-}, {timestamps: true});
+}, { timestamps: true });
 
 const Maid = mongoose.model('Maid', maidSchema)
 
