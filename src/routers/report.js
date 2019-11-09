@@ -10,8 +10,8 @@ const Report = require('../models/report');
 router.post("/report", authMiddleware, async (req, res) => {
     try {
         const report = new Report();
-        report.user = req.user._id;
-        report.maid = req.body.maid;
+        report.user = req.body.maid;
+        report.reportedBy = req.user._id;
         report.reason = req.body.reason;
         report.description = req.body.reason;
         await report.save();        

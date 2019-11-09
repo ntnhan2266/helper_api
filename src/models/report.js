@@ -1,12 +1,12 @@
 const mongoose = require("mongoose");
 
 const reportSchema = new mongoose.Schema({
-    maid: {
+    user: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Maid",
         default: null,
     },
-    user: {
+    reporedtBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         default: null,
