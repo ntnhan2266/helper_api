@@ -1,11 +1,12 @@
 const express = require("express");
 const router = new express.Router();
-const _ = require('lodash');
+const _ = require("lodash");
 
 const Maid = require("../models/maid");
-const Review = require('../models/review');
+const Review = require("../models/review");
 const authMiddleware = require("../middleware/auth");
 const adminMiddleware = require("../middleware/admin");
+const CONSTANTS = require("../utils/constants");
 
 router.get("/maid", authMiddleware, async (req, res) => {
   try {
@@ -15,7 +16,7 @@ router.get("/maid", authMiddleware, async (req, res) => {
       maid = await Maid.findById(id).populate({
         path: "user",
         select: "name avatar birthday gender phoneNumber address"
-      });;
+      });
     } else {
       const requestUser = req.user;
       maid = await Maid.findOne({ user: requestUser._id }).populate({
@@ -80,13 +81,33 @@ router.get("/maids", authMiddleware, async (req, res) => {
   try {
     const page = req.query.pageIndex ? req.query.pageIndex * 1 : 0;
     const pageSize = req.query.pageSize ? req.query.pageSize * 1 : 10;
-    const maids = await Maid.find({}, null, { skip: page * pageSize, limit: pageSize })
+    const query = req.query.query;
+    const tempMaids = await Maid.find({}, null, {
+      skip: page * pageSize,
+      limit: pageSize
+    })
       .populate({
         path: "user",
-        select: "name avatar birthday gender phoneNumber address"
+        select: "name email avatar birthday gender phoneNumber address",
+        match: {
+          $or: [
+            { name: new RegExp(query, "i") },
+            { email: new RegExp(query, "i") }
+          ],
+          role: CONSTANTS.ROLE.STANDARD
+        },
+        options: {
+          retainNullValues: false
+        }
       })
-      .populate('jobTypes');
-    const total = await Maid.countDocuments({});
+      .populate("jobTypes");
+    let maids = [];
+    for (const maid of tempMaids) {
+      if (maid.user) {
+        maids.push(maid);
+      }
+    }
+    const total = maids.length;
     res.send({ maids, total });
   } catch (e) {
     console.log(e);
@@ -104,9 +125,9 @@ router.get("/maids/top-rating", authMiddleware, async (req, res) => {
     const reviews = await Review.aggregate([
       {
         $group: {
-          _id: '$user',
-          avgRating: { $avg: '$rating' }
-        },
+          _id: "$user",
+          avgRating: { $avg: "$rating" }
+        }
       },
       {
         $sort: { avgRating: -1 }
@@ -115,7 +136,10 @@ router.get("/maids/top-rating", authMiddleware, async (req, res) => {
         $limit: pageSize
       }
     ]);
-    const maids = await Maid.find({}, null, { skip: page * pageSize, limit: pageSize }).populate({
+    const maids = await Maid.find({}, null, {
+      skip: page * pageSize,
+      limit: pageSize
+    }).populate({
       path: "user",
       select: "name avatar birthday gender phoneNumber address"
     });
@@ -130,8 +154,50 @@ router.get("/maids/top-rating", authMiddleware, async (req, res) => {
   }
 });
 
-router.put('/maids/active', adminMiddleware, async (req, res) => {
-  
+router.put("/maids/active", adminMiddleware, async (req, res) => {
+  try {
+    const id = req.body.id;
+    const user = await Maid.findById(id);
+    if (!user) {
+      console.log("Can find helper with id: " + id);
+      return res.send({
+        errorCode: 1,
+        errorMessage: "Can find helper"
+      });
+    }
+    user.active = true;
+    await user.save();
+    return res.send({ completed: true });
+  } catch (e) {
+    console.log(e);
+    return res.send({
+      errorCode: 1,
+      errorMessage: "Can find helper"
+    });
+  }
+});
+
+router.put("/maids/deactive", adminMiddleware, async (req, res) => {
+  try {
+    const id = req.body.id;
+    const user = await Maid.findById(id);
+    if (!user) {
+      console.log("Can find helper with id: " + id);
+      return res.send({
+        errorCode: 1,
+        errorMessage: "Can find helper"
+      });
+    }
+    user.active = false;
+    await user.save();
+    return res.send({ completed: true });
+  } catch (e) {
+    console.log(e);
+    return res.send({
+      errorCode: 1,
+      errorMessage: "Can find helper"
+    });
+  }
 });
 
 module.exports = router;
