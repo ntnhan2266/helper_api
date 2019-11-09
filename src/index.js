@@ -14,6 +14,7 @@ const reviewRouter = require('./routers/review');
 const categoryRouter = require('./routers/category');
 const notificationRouter = require('./routers/notification');
 const transactionRouter = require('./routers/transactions');
+const reportRouter = require('./routers/report');
 
 // Config global path
 global.appRoot = path.resolve(__dirname + '/..');
@@ -35,6 +36,7 @@ app.use('/api', reviewRouter);
 app.use('/api', notificationRouter);
 app.use('/api', categoryRouter);
 app.use('/api', transactionRouter);
+app.use('/api', reportRouter);
 
 app.listen(port, () => {
     console.log('Server is up on port ' + port)
