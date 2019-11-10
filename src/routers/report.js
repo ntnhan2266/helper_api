@@ -25,4 +25,8 @@ router.post("/report", authMiddleware, async (req, res) => {
     }
 });
 
+router.get('reports', adminMiddleware, async (req, res) => {
+    
+});
+
 module.exports = router;
