@@ -52,7 +52,7 @@ const addNotification = async (booking, fromUser, toUser, status) => {
     data: {
       category: booking.category + '',
       name: fromUser.name + '',
-      message: Contants.MESSAGE(status),
+      message: Constants.MESSAGE(status),
     },
     tokens: registrationTokens
   };

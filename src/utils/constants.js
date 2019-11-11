@@ -15,15 +15,15 @@ Constants.ROLE = {
 
 Constants.MESSAGE = (status) => {
     switch (status) {
-        case Contants.BOOKING_STATUS.WAITING_APPROVE:
+        case Constants.BOOKING_STATUS.WAITING_APPROVE:
             return 'noti_message_waiting';
-        case Contants.BOOKING_STATUS.APPROVED:
+        case Constants.BOOKING_STATUS.APPROVED:
             return 'noti_message_approved';
-        case Contants.BOOKING_STATUS.COMPLETED:
+        case Constants.BOOKING_STATUS.COMPLETED:
             return 'noti_message_completed';
-        case Contants.BOOKING_STATUS.REJECTED:
+        case Constants.BOOKING_STATUS.REJECTED:
             return 'noti_message_rejected';
-        case Contants.BOOKING_STATUS.CANCELLED:
+        case Constants.BOOKING_STATUS.CANCELLED:
             return 'noti_message_canceled';
         default: return '';
     }

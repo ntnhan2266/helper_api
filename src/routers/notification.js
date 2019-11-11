@@ -3,7 +3,7 @@ const router = new express.Router();
 
 const Notification = require("../models/notification");
 const authMiddleware = require("../middleware/auth");
-const Contants = require("../utils/constants");
+const Constants = require("../utils/constants");
 
 
 router.get("/notification", authMiddleware, async (req, res) => {
@@ -24,11 +24,12 @@ router.get("/notification", authMiddleware, async (req, res) => {
       y.isRead = x.isRead;
       y.fromUser = x.fromUser.name;
       y.createdAt = x.createdAt;
-      y.message = Contants.MESSAGE(x.booking.status);
+      y.message = Constants.MESSAGE(x.booking.status);
       return y;
     });
     res.send({ notifications });
   } catch (e) {
+    console.log(e);
     res.send({
       errorCode: 1,
       errorMessage: "Can not get notification"

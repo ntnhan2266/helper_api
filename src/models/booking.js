@@ -8,7 +8,8 @@ const bookingSchema = new mongoose.Schema(
       required: true
     },
     category: {
-      type: Number,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Category",
     },
     address: {
       type: String,

@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const _ = require("lodash");
 
 const adminMiddleware = require("../middleware/admin");
+const authMiddleware = require("../middleware/auth");
 const Categories = require('../models/category');
 
 router.get("/categories", adminMiddleware, async (req, res) => {
@@ -16,6 +17,20 @@ router.get("/categories", adminMiddleware, async (req, res) => {
             .limit(pageSize);
         const total = await Categories.countDocuments({});
         res.send({ categories, total });
+    } catch (e) {
+        console.log(e);
+        res.send({
+            errorCode: 1,
+            errorMessage: "Can not load data"
+        });
+    }
+});
+
+router.get("/categories/available", authMiddleware, async (req, res) => {
+    try {
+        const categories = await Categories.find({ isActive: true })
+            .sort({ order: 1 })
+        res.send({ categories });
     } catch (e) {
         console.log(e);
         res.send({

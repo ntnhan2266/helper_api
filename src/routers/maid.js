@@ -82,7 +82,7 @@ router.get("/maids", authMiddleware, async (req, res) => {
     const page = req.query.pageIndex ? req.query.pageIndex * 1 : 0;
     const pageSize = req.query.pageSize ? req.query.pageSize * 1 : 10;
     const query = req.query.query;
-    const tempMaids = await Maid.find({}, null, {
+    const tempMaids = await Maid.find({active: true}, null, {
       skip: page * pageSize,
       limit: pageSize
     })
@@ -94,7 +94,7 @@ router.get("/maids", authMiddleware, async (req, res) => {
             { name: new RegExp(query, "i") },
             { email: new RegExp(query, "i") }
           ],
-          role: CONSTANTS.ROLE.STANDARD
+          role: CONSTANTS.ROLE.STANDARD,
         },
         options: {
           retainNullValues: false
@@ -144,6 +144,47 @@ router.get("/maids/top-rating", authMiddleware, async (req, res) => {
       select: "name avatar birthday gender phoneNumber address"
     });
     const total = await Maid.countDocuments({});
+    res.send({ maids, total });
+  } catch (e) {
+    console.log(e);
+    res.send({
+      errorCode: 1,
+      errorMessage: "Unexpected errors"
+    });
+  }
+});
+
+router.get("/maid/list", authMiddleware, async (req, res) => {
+  try {
+    const page = req.query.pageIndex ? req.query.pageIndex * 1 : 0;
+    const pageSize = req.query.pageSize ? req.query.pageSize * 1 : 10;
+    const query = req.query.query;
+    const tempMaids = await Maid.find({}, null, {
+      skip: page * pageSize,
+      limit: pageSize
+    })
+      .populate({
+        path: "user",
+        select: "name email avatar birthday gender phoneNumber address",
+        match: {
+          $or: [
+            { name: new RegExp(query, "i") },
+            { email: new RegExp(query, "i") }
+          ],
+          role: CONSTANTS.ROLE.STANDARD
+        },
+        options: {
+          retainNullValues: false
+        }
+      })
+      .populate("jobTypes");
+    let maids = [];
+    for (const maid of tempMaids) {
+      if (maid.user) {
+        maids.push(maid);
+      }
+    }
+    const total = maids.length;
     res.send({ maids, total });
   } catch (e) {
     console.log(e);
