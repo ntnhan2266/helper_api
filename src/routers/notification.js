@@ -18,13 +18,13 @@ router.get("/notification", authMiddleware, async (req, res) => {
       .sort({ updatedAt: -1 })
       .skip(pageIndex * pageSize)
       .limit(pageSize);
-    const notifications = Array.from(result, x => {
+    var notifications = Array.from(result, x => {
       var y = {};
       y.booking = x.booking;
       y.isRead = x.isRead;
       y.fromUser = x.fromUser.name;
       y.createdAt = x.createdAt;
-      y.message = Constants.MESSAGE(x.booking.status);
+      y.message = Constants.MESSAGE(x.status);
       return y;
     });
     res.send({ notifications });

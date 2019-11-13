@@ -37,6 +37,7 @@ const addNotification = async (booking, fromUser, toUser, status) => {
   notification.booking = booking;
   notification.fromUser = fromUser;
   notification.toUser = toUser;
+  notification.status = booking.status;
   await notification.save();
   
   const category = await Category.findById(booking.category);
