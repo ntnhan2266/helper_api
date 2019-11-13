@@ -6,7 +6,7 @@ const reportSchema = new mongoose.Schema({
         ref: "Maid",
         default: null,
     },
-    reporedtBy: {
+    reportedBy: {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
         default: null,

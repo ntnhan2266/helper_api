@@ -6,16 +6,19 @@ const _ = require("lodash");
 const adminMiddleware = require("../middleware/admin");
 const authMiddleware = require("../middleware/auth");
 const Report = require('../models/report');
+const Booking = require('../models/booking');
 
 router.post("/report", authMiddleware, async (req, res) => {
     try {
+        const bookingId = req.body.id;
+        const booking = await Booking.findById(bookingId);
         const report = new Report();
-        report.user = req.body.maid;
-        report.reportedBy = req.user._id;
+        report.user = booking.maid;
+        report.reportedBy = booking.createdBy;
         report.reason = req.body.reason;
-        report.description = req.body.reason;
+        report.description = req.body.description;
         await report.save();        
-        return res.send({ report });
+        return res.send({ completed: true });
     } catch (e) {
         console.log(e);
         res.send({
