@@ -5,7 +5,6 @@ const fs = require('fs');
 const path = require('path');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const Email = require('email-templates');
 const moment = require('moment');
 
 const User = require('../models/user');
@@ -273,7 +272,7 @@ router.post('/forgot-password', [
         await email.send({
             template: 'forgot-password',
             message: {
-                from: 'Smart Rabbit <no-reply@rabbit.com>',
+                from: 'Smart Rabbit <no-reply@smartrabbit.com>',
                 to: userEmail,
             },
             locals: {
