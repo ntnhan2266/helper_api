@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const _ = require("lodash");
 const moment = require("moment");
 
+const Category = require("../models/category");
 const Notification = require("../models/notification");
 const Booking = require("../models/booking");
 const Transaction = require("../models/transaction");
@@ -36,6 +37,8 @@ const addNotification = async (booking, fromUser, toUser, status) => {
   notification.fromUser = fromUser;
   notification.toUser = toUser;
   await notification.save();
+  
+  const category = await Category.findById(booking.category);
 
   // send notification
   const querySnapshot = await admin.firestore()
@@ -50,7 +53,8 @@ const addNotification = async (booking, fromUser, toUser, status) => {
       body: 'Smart Rabbit',
     },
     data: {
-      category: booking.category + '',
+      category_vi: category.nameVi,
+      category_en: category.nameEn,
       name: fromUser.name + '',
       message: Constants.MESSAGE(status),
     },
