@@ -275,6 +275,7 @@ router.put("/booking/complete", authMiddleware, async (req, res) => {
     transaction.amount = booking.amount;
     transaction.maid = booking.maid;
     transaction.user = booking.createdBy;
+    transaction.category = booking.category;
     transaction.status = Constants.TRANSATION_STATUS.WAITING;
     await transaction.save();
 

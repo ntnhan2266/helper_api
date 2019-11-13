@@ -29,7 +29,31 @@ router.post("/report", authMiddleware, async (req, res) => {
 });
 
 router.get('reports', adminMiddleware, async (req, res) => {
-    
+    try {
+        const pageSize = req.query.pageSize * 1 || 10;
+        const pageIndex = req.query.pageIndex * 1 || 0;
+        const transactions = await Transaction.find({})
+            .populate('booking')
+            .populate({
+                path: 'maid',
+                populate: {
+                    path: 'user'
+                }
+            })
+            .populate('user')
+            .populate('category')
+            .skip(pageIndex * pageSize)
+            .limit(pageSize)
+            .sort([['createdAt', -1]]).lean().exec();
+        const total = await Transaction.countDocuments({});
+        res.send({ transactions, total });
+    } catch (e) {
+        console.log(e);
+        res.send({
+            errorCode: 1,
+            errorMessage: "Something went wrong"
+        });
+    }
 });
 
 module.exports = router;
