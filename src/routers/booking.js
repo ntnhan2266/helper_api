@@ -14,7 +14,8 @@ const Interval = require("../models/interval");
 const Constants = require("../utils/constants");
 const authMiddleware = require("../middleware/auth");
 const adminMiddleware = require("../middleware/admin");
-const transporter = require('../configs/email');
+const email = require('../configs/email');
+const utils = require('../utils/common');
 
 const calculateAmount = (type, interval, startTime, endTime, salaryPerHour) => {
   let price = 0;
@@ -263,25 +264,41 @@ router.put("/booking/complete", authMiddleware, async (req, res) => {
   const requestUser = req.user;
   try {
     const maid = await Maid.findOne({ user: requestUser._id });
-    const booking = await Booking.findOne({ maid: maid._id, _id: bookingId });
+    const booking = await Booking.findOne({ maid: maid._id, _id: bookingId }).populate('category').populate('createdBy');
     // Has access
     // Approve
     booking.status = Constants.BOOKING_STATUS.COMPLETED;
     booking.completedAt = new Date();
 
     //send notification from helper to user
-    addNotification(booking, maid.user, req.user, Constants.BOOKING_STATUS.COMPLETED)
+    addNotification(booking, maid.user, req.user, Constants.BOOKING_STATUS.COMPLETED);
+
     // Add transaction for this booking
     const transaction = new Transaction();
     transaction.booking = booking._id;
     transaction.amount = booking.amount;
     transaction.maid = booking.maid;
-    transaction.user = booking.user;
+    transaction.user = booking.createdBy;
+    transaction.category = booking.category;
     transaction.status = Constants.TRANSATION_STATUS.WAITING;
     await transaction.save();
 
     // Send email
-
+    email.send({
+        template: 'complete-booking',
+        message: {
+            from: 'Smart Rabbit <no-reply@smartrabbit.com>',
+            to: booking.createdBy.email,
+        },
+        locals: {
+            name: booking.createdBy.name,
+            category: booking.category.nameVi,
+            phone: booking.createdBy.phoneNumber,
+            amount: utils.formatCurrency(booking.amount, ''),
+            transactionId: transaction._id,
+            time: moment().format('DD/MM/YYYY HH:mm'),
+        }
+    });
     await booking.save();
     res.send({ completed: true });
   } catch (e) {
