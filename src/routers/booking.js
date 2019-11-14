@@ -41,6 +41,7 @@ const addNotification = async (booking, fromUser, toUser, status) => {
   await notification.save();
   
   const category = await Category.findById(booking.category);
+  const fromUserObj = await User.findById(fromUser, 'name');
 
   // send notification
   const querySnapshot = await admin.firestore()
@@ -57,7 +58,7 @@ const addNotification = async (booking, fromUser, toUser, status) => {
     data: {
       category_vi: category.nameVi,
       category_en: category.nameEn,
-      name: fromUser.name + '',
+      name: fromUserObj.name + '',
       message: Constants.MESSAGE(status),
     },
     tokens: registrationTokens
