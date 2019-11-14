@@ -5,6 +5,7 @@ const mongoose = require("mongoose");
 const _ = require("lodash");
 const moment = require("moment");
 
+const User = require("../models/user");
 const Category = require("../models/category");
 const Notification = require("../models/notification");
 const Booking = require("../models/booking");
