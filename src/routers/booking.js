@@ -251,7 +251,7 @@ router.put("/booking/approve", authMiddleware, async (req, res) => {
     await booking.save();
 
     //send notification from helper to user
-    addNotification(booking, maid.user, req.user, Constants.BOOKING_STATUS.APPROVED)
+    addNotification(booking, requestUser._id, booking.createdBy, Constants.BOOKING_STATUS.APPROVED)
 
     res.send({ completed: true });
   } catch (e) {
@@ -272,7 +272,7 @@ router.put("/booking/complete", authMiddleware, async (req, res) => {
     booking.completedAt = new Date();
 
     //send notification from helper to user
-    addNotification(booking, maid.user, req.user, Constants.BOOKING_STATUS.COMPLETED);
+    addNotification(booking, requestUser._id, booking.createdBy, Constants.BOOKING_STATUS.COMPLETED);
 
     // Add transaction for this booking
     const transaction = new Transaction();
@@ -330,7 +330,7 @@ router.post("/booking/cancel", authMiddleware, async (req, res) => {
     await booking.save();
 
     //send notification from user to helper
-    addNotification(booking, req.user, booking.maid.user, Constants.BOOKING_STATUS.CANCELLED);
+    addNotification(booking, booking.createdBy, booking.maid.user, Constants.BOOKING_STATUS.CANCELLED);
 
     res.send({ completed: true });
   } catch (e) {
@@ -355,7 +355,7 @@ router.post("/booking/reject", authMiddleware, async (req, res) => {
     booking.content = content;
 
     //send notification from helper to user
-    addNotification(booking, req.user, booking.createdBy, Constants.BOOKING_STATUS.REJECTED);
+    addNotification(booking, requestUser._id, booking.createdBy, Constants.BOOKING_STATUS.REJECTED);
 
     await booking.save();
     res.send({ completed: true });
