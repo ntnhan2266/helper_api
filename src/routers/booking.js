@@ -46,7 +46,7 @@ const addNotification = async (booking, fromUser, toUser, status) => {
   // send notification
   const querySnapshot = await admin.firestore()
     .collection('users')
-    .doc(toUser._id + '')
+    .doc(toUser + '')
     .collection('tokens')
     .get();
   const registrationTokens = querySnapshot.docs.map(doc => doc.id);
@@ -89,7 +89,7 @@ router.post("/booking", authMiddleware, async (req, res) => {
     booking.endDate = new Date(body.endDate);
     booking.maid = body.maid;
     booking.createdBy = req.user._id;
-    const maid = await Maid.findById(body.maid).populate("user");
+    const maid = await Maid.findById(body.maid);
     let amount = calculateAmount(
       body.type,
       body.workingDates,
@@ -113,7 +113,7 @@ router.post("/booking", authMiddleware, async (req, res) => {
     await booking.save();
 
     //send notification from user to helper
-    addNotification(booking, req.user, maid.user, Constants.BOOKING_STATUS.WAITING_APPROVE);
+    addNotification(booking, booking.createdBy, maid.user, Constants.BOOKING_STATUS.WAITING_APPROVE);
 
     res.send({ booking });
   } catch (e) {
@@ -244,7 +244,7 @@ router.put("/booking/approve", authMiddleware, async (req, res) => {
   const bookingId = req.query.id;
   const requestUser = req.user;
   try {
-    const maid = await Maid.findOne({ user: requestUser._id }).populate("user");
+    const maid = await Maid.findOne({ user: requestUser._id });
     const booking = await Booking.findOne({ maid: maid._id, _id: bookingId });
     // Has access
     // Approve
@@ -273,7 +273,7 @@ router.put("/booking/complete", authMiddleware, async (req, res) => {
     booking.completedAt = new Date();
 
     //send notification from helper to user
-    addNotification(booking, requestUser._id, booking.createdBy, Constants.BOOKING_STATUS.COMPLETED);
+    addNotification(booking, requestUser._id, booking.createdBy._id, Constants.BOOKING_STATUS.COMPLETED);
 
     // Add transaction for this booking
     const transaction = new Transaction();
@@ -318,11 +318,7 @@ router.post("/booking/cancel", authMiddleware, async (req, res) => {
     // const maid = await Maid.findOne({ user: requestUser._id });
     // const booking = await Booking.findOne({ maid: maid._id, _id: bookingId });
     const booking = await Booking.findOne({ createdBy: requestUser._id, _id: bookingId })
-      .populate({
-        path: "maid",
-        select: "user",
-        populate: "user"
-      });
+      .populate("maid");
     // Has access
     // Approve
     booking.status = Constants.BOOKING_STATUS.CANCELLED;
@@ -347,8 +343,7 @@ router.post("/booking/reject", authMiddleware, async (req, res) => {
   const requestUser = req.user;
   try {
     const maid = await Maid.findOne({ user: requestUser._id });
-    const booking = await Booking.findOne({ maid: maid._id, _id: bookingId })
-      .populate("createdBy");
+    const booking = await Booking.findOne({ maid: maid._id, _id: bookingId });
     // Has access
     // Approve
     booking.status = Constants.BOOKING_STATUS.REJECTED;
