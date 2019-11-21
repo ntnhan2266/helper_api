@@ -37,4 +37,30 @@ router.get("/notification", authMiddleware, async (req, res) => {
   }
 });
 
+router.get("/notification/read", authMiddleware, async (req, res) => {
+  try {
+    await Notification.updateMany({ toUser: req.user._id }, { isRead: true });
+    res.send({ success: true });
+  } catch (e) {
+    console.log(e);
+    res.send({
+      errorCode: 1,
+      errorMessage: "Can not read notification"
+    });
+  }
+});
+
+router.get("/notification/count", authMiddleware, async (req, res) => {
+  try {
+    const result = await Notification.countDocuments({ toUser: req.user._id, isRead: false });
+    res.send({ count: result });
+  } catch (e) {
+    console.log(e);
+    res.send({
+      errorCode: 1,
+      errorMessage: "Can not count notification"
+    });
+  }
+});
+
 module.exports = router;
