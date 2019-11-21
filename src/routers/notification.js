@@ -15,7 +15,7 @@ router.get("/notification", authMiddleware, async (req, res) => {
     })
       .populate("booking", "-createdBy -maid")
       .populate("fromUser", "name")
-      .sort({ updatedAt: -1 })
+      .sort({ createdAt: -1 })
       .skip(pageIndex * pageSize)
       .limit(pageSize);
     var notifications = Array.from(result, x => {
