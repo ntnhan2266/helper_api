@@ -36,7 +36,12 @@ const maidSchema = new mongoose.Schema({
     active: {
         type: Boolean,
         default: true,
-    }
+    },
+    ratting: {
+        type: Number,
+        required: true,
+        default: 0,
+    },
 }, { timestamps: true });
 
 const Maid = mongoose.model('Maid', maidSchema)

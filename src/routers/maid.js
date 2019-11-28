@@ -7,6 +7,7 @@ const Review = require("../models/review");
 const authMiddleware = require("../middleware/auth");
 const adminMiddleware = require("../middleware/admin");
 const CONSTANTS = require("../utils/constants");
+var ObjectId = require('mongoose').Types.ObjectId;
 
 router.get("/maid", authMiddleware, async (req, res) => {
   try {
@@ -82,7 +83,7 @@ router.get("/maids", authMiddleware, async (req, res) => {
     const page = req.query.pageIndex ? req.query.pageIndex * 1 : 0;
     const pageSize = req.query.pageSize ? req.query.pageSize * 1 : 10;
     const query = req.query.query;
-    const tempMaids = await Maid.find({active: true}, null, {
+    const tempMaids = await Maid.find({ active: true }, null, {
       skip: page * pageSize,
       limit: pageSize
     })
@@ -237,6 +238,69 @@ router.put("/maids/deactive", adminMiddleware, async (req, res) => {
     return res.send({
       errorCode: 1,
       errorMessage: "Can find helper"
+    });
+  }
+});
+
+router.get("/maids/search", authMiddleware, async (req, res) => {
+  try {
+    const pageIndex = req.query.pageIndex ? req.query.pageIndex * 1 : 0;
+    const pageSize = req.query.pageSize ? req.query.pageSize * 1 : 10;
+    const search = req.query.search ? req.query.search : "";
+    const services = req.query.services ? req.query.services.split(",").map(ObjectId) : [];
+    const areas = req.query.areas ? req.query.areas.split(",").map(Number) : [];
+    const minSalary = req.query.minSalary ? req.query.minSalary : 0;
+    const maxSalary = req.query.maxSalary ? req.query.maxSalary : 0;
+
+    console.log("========")
+    console.log("Search helper")
+    console.log(pageIndex);
+    console.log(pageSize);
+    console.log(search);
+    console.log(services);
+    console.log(areas);
+    console.log(minSalary);
+    console.log(maxSalary);
+
+    const maids = await Maid
+      .aggregate([
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'user',
+            foreignField: '_id',
+            as: 'user_info'
+          }
+        },
+        { $unwind: "$user_info" },
+        {
+          $match: {
+            $and: [
+              { "user_info.name": { $regex: search, $options: "i" } },
+              { "salary": { $gte: Number(minSalary), $lte: Number(maxSalary) } },
+              areas.length !== 0 ? { "supportAreas": { $in: areas } } : {},
+              services.length !== 0 ? { "jobTypes": { $in: services } } : {},
+            ]
+          }
+        },
+        {
+          $project: {
+            _id: 1,
+            salary: 1,
+            ratting: 1,
+            name: "$user_info.name",
+          }
+        },
+      ])
+      .skip(pageIndex * pageSize)
+      .limit(pageSize);
+    console.log(maids);
+    res.send({ maids });
+  } catch (e) {
+    console.log(e);
+    res.send({
+      errorCode: 1,
+      errorMessage: "Unexpected errors"
     });
   }
 });
