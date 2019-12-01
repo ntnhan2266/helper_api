@@ -289,6 +289,7 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
             salary: 1,
             ratting: 1,
             name: "$user_info.name",
+            avatar: "$user_info.avatar",
           }
         },
       ])
