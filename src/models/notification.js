@@ -25,6 +25,10 @@ const notificationSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isHelper: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );

@@ -22,6 +22,7 @@ router.get("/notification", authMiddleware, async (req, res) => {
       var y = {};
       y.booking = x.booking;
       y.isRead = x.isRead;
+      y.isHelper = x.isHelper;
       y.fromUser = x.fromUser.name;
       y.createdAt = x.createdAt;
       y.message = Constants.MESSAGE(x.status);
