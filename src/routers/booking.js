@@ -367,7 +367,16 @@ router.get('/bookings/list', adminMiddleware, async (req, res) => {
   try {
     const pageIndex = req.query.pageIndex * 1;
     const pageSize = req.query.pageSize * 1;
-    const bookings = await Booking.find()
+    const filterBy = req.query.filterBy;
+    const queryId = req.query.queryId;
+    const date = req.query.date;
+    let filter = {};
+    if (filterBy == 'helper') {
+      filter = {maid: queryId, createdAt: new Date(date)}
+    } else {
+      filter = {createdBy: queryId, createdAt: new Date(date)}
+    }
+    const bookings = await Booking.find(filter)
       .populate("createdBy")
       .skip(pageIndex * pageSize)
       .limit(pageSize);
