@@ -1,7 +1,7 @@
 const express = require("express");
 
 const Review = require("../models/review");
-const Maid = require('../models/maid')
+const Maid = require("../models/maid");
 const Booking = require("../models/booking");
 const authMiddleware = require("../middleware/auth");
 const adminMiddleware = require("../middleware/admin");
@@ -32,16 +32,18 @@ router.post("/review", authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/reviews', authMiddleware, async (req, res) => {
+router.get("/reviews", authMiddleware, async (req, res) => {
   try {
     const pageSize = req.query.pageSize * 1 || 10;
     const pageIndex = req.query.pageIndex * 1 || 0;
     const maidId = req.query.maidId;
     const reviews = await Review.find({ maid: mongoose.Types.ObjectId(maidId) })
-      .populate('createdBy')
+      .populate("createdBy")
       .skip(pageIndex * pageSize)
       .limit(pageSize)
-      .sort([['createdAt', -1]]).lean().exec();
+      .sort([["createdAt", -1]])
+      .lean()
+      .exec();
     const maidIds = reviews.map(review => {
       return mongoose.Types.ObjectId(review.maid);
     });
@@ -55,7 +57,9 @@ router.get('/reviews', authMiddleware, async (req, res) => {
         reviews[i].maid = maids[reviews[i].maid];
       }
     }
-    const total = await Review.countDocuments({ maid: mongoose.Types.ObjectId(maidId) });
+    const total = await Review.countDocuments({
+      maid: mongoose.Types.ObjectId(maidId)
+    });
     res.send({ reviews, total });
   } catch (e) {
     console.log(e);
@@ -66,15 +70,34 @@ router.get('/reviews', authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/reviews/list', adminMiddleware, async (req, res) => {
+router.get("/reviews/list", adminMiddleware, async (req, res) => {
   try {
     const pageSize = req.query.pageSize * 1 || 10;
     const pageIndex = req.query.pageIndex * 1 || 0;
+    const query = req.query.query;
     const reviews = await Review.find({})
-      .populate('createdBy')
+      .populate("createdBy")
+      .populate({
+        path: "maid",
+        populate: {
+          path: "user",
+          match: {
+            $or: [
+              { name: new RegExp(query, "i") },
+              { email: new RegExp(query, "i") }
+            ],
+            role: CONSTANTS.ROLE.STANDARD
+          },
+          options: {
+            retainNullValues: false
+          }
+        }
+      })
       .skip(pageIndex * pageSize)
       .limit(pageSize)
-      .sort([['createdAt', -1]]).lean().exec();
+      .sort([["createdAt", -1]])
+      .lean()
+      .exec();
     const total = await Review.countDocuments({});
     res.send({ reviews, total });
   } catch (e) {
@@ -86,7 +109,7 @@ router.get('/reviews/list', adminMiddleware, async (req, res) => {
   }
 });
 
-router.delete('/reviews/delete', adminMiddleware, async (req, res) => {
+router.delete("/reviews/delete", adminMiddleware, async (req, res) => {
   try {
     const id = req.query.id;
     await Review.deleteOne({ _id: id });
