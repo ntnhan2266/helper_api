@@ -8,6 +8,7 @@ const adminMiddleware = require("../middleware/admin");
 const router = new express.Router();
 const mongoose = require("mongoose");
 const _ = require("lodash");
+const Constants = require("../utils/constants");
 
 router.post("/review", authMiddleware, async (req, res) => {
   try {
@@ -75,19 +76,32 @@ router.get("/reviews/list", adminMiddleware, async (req, res) => {
     const pageSize = req.query.pageSize * 1 || 10;
     const pageIndex = req.query.pageIndex * 1 || 0;
     const query = req.query.query;
-    const reviews = await Review.find({})
-      .populate("createdBy")
+    const filterBy = req.query.filterBy;
+    const reviews = await Review.find()
+      .populate({
+        path: 'createdBy',
+        match: !filterBy || filterBy == 'user' ? {
+          $or: [
+            { 'name': new RegExp(query, "i") },
+            { 'email' : new RegExp(query, "i") }
+          ],
+          role: Constants.ROLE.STANDARD
+        } : {},
+      })
       .populate({
         path: "maid",
+        options: {
+          retainNullValues: false
+        },
         populate: {
           path: "user",
-          match: {
+          match: !filterBy || filterBy == 'host' ? {
             $or: [
-              { name: new RegExp(query, "i") },
-              { email: new RegExp(query, "i") }
+              { 'name': new RegExp(query, "i") },
+              { 'email' : new RegExp(query, "i") }
             ],
-            role: CONSTANTS.ROLE.STANDARD
-          },
+            role: Constants.ROLE.STANDARD
+          } : {},
           options: {
             retainNullValues: false
           }
@@ -98,8 +112,15 @@ router.get("/reviews/list", adminMiddleware, async (req, res) => {
       .sort([["createdAt", -1]])
       .lean()
       .exec();
+    const compactReviews = [];
+    for (let item of reviews) {
+      if (!item.createdBy || !item.maid || !item.maid.user) {
+        continue;
+      }
+      compactReviews.push(item);
+    }
     const total = await Review.countDocuments({});
-    res.send({ reviews, total });
+    res.send({ reviews: compactReviews, total });
   } catch (e) {
     console.log(e);
     res.send({
