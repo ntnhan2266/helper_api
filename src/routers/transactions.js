@@ -11,7 +11,20 @@ router.get("/transactions", adminMiddleware, async (req, res) => {
     try {
         const pageSize = req.query.pageSize * 1 || 10;
         const pageIndex = req.query.pageIndex * 1 || 0;
-        const transactions = await Transaction.find({})
+        const status = req.query.status;
+        const type = req.query.type;
+        const tid = req.query.tid;
+        const filter = {};
+        if (status) {
+            filter.status = status;
+        }
+        if (type) {
+            filter.category = type;
+        }
+        if (tid) {
+            filter._id = tid;
+        }
+        const transactions = await Transaction.find(filter)
             .populate('booking')
             .populate({
                 path: 'maid',
@@ -24,7 +37,7 @@ router.get("/transactions", adminMiddleware, async (req, res) => {
             .skip(pageIndex * pageSize)
             .limit(pageSize)
             .sort([['createdAt', -1]]).lean().exec();
-        const total = await Transaction.countDocuments({});
+        const total = await Transaction.countDocuments(filter);
         res.send({ transactions, total });
     } catch (e) {
         console.log(e);
