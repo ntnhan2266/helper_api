@@ -369,12 +369,15 @@ router.get('/bookings/list', adminMiddleware, async (req, res) => {
     const pageSize = req.query.pageSize * 1;
     const filterBy = req.query.filterBy;
     const queryId = req.query.queryId;
-    const date = req.query.date;
+    const type = req.query.type;
     let filter = {};
-    if (filterBy == 'helper') {
-      filter = {maid: queryId, createdAt: new Date(date)}
-    } else {
-      filter = {createdBy: queryId, createdAt: new Date(date)}
+    if (filterBy == 'helper' && queryId) {
+      filter = {maid: queryId}
+    } else if (queryId) {
+      filter = {createdBy: queryId}
+    }
+    if (type) {
+      filter.status = type;
     }
     const bookings = await Booking.find(filter)
       .populate("createdBy")
@@ -393,7 +396,7 @@ router.get('/bookings/list', adminMiddleware, async (req, res) => {
         bookings[i].maid = maids[bookings[i].maid];
       }
     }
-    const total = await Booking.countDocuments({});
+    const total = await Booking.countDocuments(filter);
     return res.send({ bookings, total });
   } catch (e) {
     console.log(e);
