@@ -20,7 +20,11 @@ router.post("/review", authMiddleware, async (req, res) => {
     review.createdBy = req.user._id;
     const booking = await Booking.findById(body.bookingId);
     booking.isReviewed = true;
+    const maid = await Maid.findById(body.maidId);
+    maid.ratting = (maid.ratting * maid.numberOfRatting + body.rating) / (maid.numberOfRatting + 1);
+    maid.numberOfRatting = maid.numberOfRatting + 1;
     await booking.save();
+    await maid.save();
     await review.save();
     res.send({ review });
   } catch (e) {
