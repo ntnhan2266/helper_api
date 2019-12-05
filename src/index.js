@@ -4,6 +4,7 @@ const express = require('express');
 const path = require('path');
 const bodyParser = require("body-parser");
 const cors = require('cors');
+require('./tasks/update-maid-review');
 
 const userRouter = require('./routers/user');
 const authRouter = require('./routers/auth');
