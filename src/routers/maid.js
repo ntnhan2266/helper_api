@@ -281,7 +281,7 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
       updateMaids.forEach(async (maid) => {
         maid.location = {
           type: "Point",
-          coordinates: user.long && user.lat ? [user.long, user.lat] : [0.0, 0.0]
+          coordinates: maid.user.long && maid.user.lat ? [maid.user.long, maid.user.lat] : [0.0, 0.0]
         }
         await maid.save();
       });
