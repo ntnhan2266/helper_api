@@ -1,10 +1,8 @@
 const cron = require("node-cron");
-const mongoose = require("mongoose");
-const _ = require("lodash");
 const Maid = require("../models/maid");
 const Review = require("../models/review");
 
-cron.schedule("* * * * *", async () => {
+cron.schedule("0 0 * * *", async () => {
   try {
     // Get all maid
     const maids = await Maid.find();
