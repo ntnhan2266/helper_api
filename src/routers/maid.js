@@ -251,7 +251,7 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
     const areas = req.query.areas ? req.query.areas.split(",").map(Number) : [];
     const minSalary = req.query.minSalary ? req.query.minSalary : 0;
     const maxSalary = req.query.maxSalary ? req.query.maxSalary : 0;
-    const sort = req.query.sort ? req.query.sort : "ratting";
+    const sort = req.query.sort && req.query.sort === "distance" ? { "distance": 1 } : { "ratting": -1 };
 
     console.log("========")
     console.log("Search helper")
@@ -294,7 +294,7 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
             avatar: "$user_info.avatar",
           }
         },
-        { "$sort": { sort: -1 } },
+        { "$sort": sort },
       ])
       .skip(pageIndex * pageSize)
       .limit(pageSize);
