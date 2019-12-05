@@ -264,46 +264,43 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
     console.log(maxSalary);
     console.log(sort);
 
-    if (sort === "ratting") {
-      const maids = await Maid
-        .aggregate([
-          {
-            $lookup: {
-              from: 'users',
-              localField: 'user',
-              foreignField: '_id',
-              as: 'user_info'
-            }
-          },
-          { $unwind: "$user_info" },
-          {
-            $match: {
-              $and: [
-                { "user_info.name": { $regex: search, $options: "i" } },
-                { "salary": { $gte: Number(minSalary), $lte: Number(maxSalary) } },
-                areas.length !== 0 ? { "supportAreas": { $in: areas } } : {},
-                services.length !== 0 ? { "jobTypes": { $in: services } } : {},
-              ]
-            }
-          },
-          {
-            $project: {
-              _id: 1,
-              salary: 1,
-              ratting: 1,
-              name: "$user_info.name",
-              avatar: "$user_info.avatar",
-            }
-          },
-        ])
-        .sort({ ratting: -1 })
-        .skip(pageIndex * pageSize)
-        .limit(pageSize);
-      console.log(maids);
-      res.send({ maids });
-    } else {
-      res.send({ maids: [] })
-    }
+    const maids = await Maid
+      .aggregate([
+        {
+          $lookup: {
+            from: 'users',
+            localField: 'user',
+            foreignField: '_id',
+            as: 'user_info'
+          }
+        },
+        { $unwind: "$user_info" },
+        {
+          $match: {
+            $and: [
+              { "user_info.name": { $regex: search, $options: "i" } },
+              { "salary": { $gte: Number(minSalary), $lte: Number(maxSalary) } },
+              areas.length !== 0 ? { "supportAreas": { $in: areas } } : {},
+              services.length !== 0 ? { "jobTypes": { $in: services } } : {},
+            ]
+          }
+        },
+        {
+          $project: {
+            _id: 1,
+            salary: 1,
+            ratting: 1,
+            name: "$user_info.name",
+            avatar: "$user_info.avatar",
+          }
+        },
+        { "$sort": { sort: -1 } },
+      ])
+      .skip(pageIndex * pageSize)
+      .limit(pageSize);
+    console.log(maids);
+    res.send({ maids });
+
   } catch (e) {
     console.log(e);
     res.send({
