@@ -296,7 +296,7 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
             }
           },
         ])
-        .sort({ sort: -1 })
+        .sort({ ratting: -1 })
         .skip(pageIndex * pageSize)
         .limit(pageSize);
       console.log(maids);
