@@ -299,7 +299,7 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
               spherical: true
             }
           },
-          { $unwind: "$distance" },
+          // { $unwind: "$distance" },
           {
             $lookup: {
               from: 'users',
@@ -324,7 +324,7 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
               _id: 1,
               salary: 1,
               ratting: 1,
-              distance: 1,
+              distance: "$distance",
               location: "$location.coordinates",
               name: "$user_info.name",
               avatar: "$user_info.avatar",
