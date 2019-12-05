@@ -10,19 +10,18 @@ router.post("/invite/email", authMiddleware, async (req, res) => {
     console.log(user);
     const email = req.body.email;
     console.log(email);
-    let transport = nodemailer.createTransport({
-      host: 'smtp.mailtrap.io',
-      port: 2525,
+    var transport = nodemailer.createTransport({
+      service: 'gmail',
       auth: {
-        user: '16198c947548f6',
-        pass: '592dd89e1e2080'
+        user: 'smart.rabbit.app@gmail.com',
+        pass: '12ba456789'
       }
     });
     const message = {
-      from: 'smart-rabit@app.com',
+      from: 'Smart Rabbit',
       to: email,
       subject: 'Invitation',
-      text: `${user} invite you to Smart Rabbit. Install the app now!!!`
+      html: `<p><b>${user}</b> invite you to <b>Smart Rabbit</b>. Install the app now!!!</p>`
     };
     transport.sendMail(message, function (err, info) {
       if (err) {
