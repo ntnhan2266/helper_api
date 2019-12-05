@@ -252,55 +252,96 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
     const minSalary = req.query.minSalary ? req.query.minSalary : 0;
     const maxSalary = req.query.maxSalary ? req.query.maxSalary : 0;
     const sort = req.query.sort && req.query.sort === "distance" ? { "distance": 1 } : { "ratting": -1 };
+    const lat = req.query.lat;
+    const long = req.query.lat;
+    const user = req.user;
+    const coordinates = lat && long
+      ? [long, lat]
+      : user.lat && user.long ? [user.long, user.lat] : null;
 
-    console.log("========")
-    console.log("Search helper")
-    console.log(pageIndex);
-    console.log(pageSize);
-    console.log(search);
-    console.log(services);
-    console.log(areas);
-    console.log(minSalary);
-    console.log(maxSalary);
-    console.log(sort);
+    if (coordinates) {
+      console.log("========")
+      console.log("Search helper")
+      console.log(pageIndex);
+      console.log(pageSize);
+      console.log(search);
+      console.log(services);
+      console.log(areas);
+      console.log(minSalary);
+      console.log(maxSalary);
+      console.log(sort)
+      console.log(coordinates);
 
-    const maids = await Maid
-      .aggregate([
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'user',
-            foreignField: '_id',
-            as: 'user_info'
-          }
-        },
-        { $unwind: "$user_info" },
-        {
-          $match: {
-            $and: [
-              { "user_info.name": { $regex: search, $options: "i" } },
-              { "salary": { $gte: Number(minSalary), $lte: Number(maxSalary) } },
-              areas.length !== 0 ? { "supportAreas": { $in: areas } } : {},
-              services.length !== 0 ? { "jobTypes": { $in: services } } : {},
-            ]
-          }
-        },
-        {
-          $project: {
-            _id: 1,
-            salary: 1,
-            ratting: 1,
-            name: "$user_info.name",
-            avatar: "$user_info.avatar",
-          }
-        },
-        { "$sort": sort },
-      ])
-      .skip(pageIndex * pageSize)
-      .limit(pageSize);
-    console.log(maids);
-    res.send({ maids });
+      const updateMaids = await Maid.find({
+        $or: [
+          { "location": null },
+          { "location.coordinates": [0.0, 0.0] }
+        ]
+      }).populate("user", "lat long");
+      updateMaids.forEach(async (maid) => {
+        maid.location = {
+          type: "Point",
+          coordinates: [user.long ? user.long : 0.0, user.lat ? user.lat : 0.0]
+        }
+        await maid.save();
+      });
 
+      const maids = await Maid
+        .aggregate([
+          {
+            $geoNear: {
+              near: {
+                type: "Point",
+                coordinates: coordinates
+              },
+              distanceField: "distance",
+              // maxDistance: 2000000000,
+              // includeLocs: "dist.location",
+              spherical: true
+            }
+          },
+          { $unwind: "$distance" },
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'user',
+              foreignField: '_id',
+              as: 'user_info'
+            }
+          },
+          { $unwind: "$user_info" },
+          {
+            $match: {
+              $and: [
+                { "user_info.name": { $regex: search, $options: "i" } },
+                { "salary": { $gte: Number(minSalary), $lte: Number(maxSalary) } },
+                areas.length !== 0 ? { "supportAreas": { $in: areas } } : {},
+                services.length !== 0 ? { "jobTypes": { $in: services } } : {},
+              ]
+            }
+          },
+          {
+            $project: {
+              _id: 1,
+              salary: 1,
+              ratting: 1,
+              distance: 1,
+              name: "$user_info.name",
+              avatar: "$user_info.avatar",
+            }
+          },
+          { "$sort": sort },
+          { "$skip": pageIndex * pageSize },
+          { "$limit": pageSize }
+        ]);
+      console.log(maids);
+      res.send({ maids });
+    } else {
+      res.send({
+        errorCode: 1,
+        errorMessage: "no_location"
+      });
+    }
   } catch (e) {
     console.log(e);
     res.send({
