@@ -296,7 +296,7 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
               },
               distanceField: "distance",
               // maxDistance: 2000000000,
-              // includeLocs: "dist.location",
+              includeLocs: "location",
               spherical: true
             }
           },
@@ -326,6 +326,7 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
               salary: 1,
               ratting: 1,
               distance: 1,
+              location: "$location.coordinates",
               name: "$user_info.name",
               avatar: "$user_info.avatar",
             }
