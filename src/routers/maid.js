@@ -273,10 +273,10 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
       console.log(coordinates);
 
       const updateMaids = await Maid.find({
-        // $or: [
-        //   { "location": null },
-        //   { "location.coordinates": [0.0, 0.0] }
-        // ]
+        $or: [
+          { "location": null },
+          { "location.coordinates": [0.0, 0.0] }
+        ]
       }).populate("user", "lat long");
       updateMaids.forEach(async (maid) => {
         maid.location = {
