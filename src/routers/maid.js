@@ -251,6 +251,7 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
     const areas = req.query.areas ? req.query.areas.split(",").map(Number) : [];
     const minSalary = req.query.minSalary ? req.query.minSalary : 0;
     const maxSalary = req.query.maxSalary ? req.query.maxSalary : 0;
+    const sort = req.query.sort ? req.query.sort : "ratting";
 
     console.log("========")
     console.log("Search helper")
@@ -261,42 +262,48 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
     console.log(areas);
     console.log(minSalary);
     console.log(maxSalary);
+    console.log(sort);
 
-    const maids = await Maid
-      .aggregate([
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'user',
-            foreignField: '_id',
-            as: 'user_info'
-          }
-        },
-        { $unwind: "$user_info" },
-        {
-          $match: {
-            $and: [
-              { "user_info.name": { $regex: search, $options: "i" } },
-              { "salary": { $gte: Number(minSalary), $lte: Number(maxSalary) } },
-              areas.length !== 0 ? { "supportAreas": { $in: areas } } : {},
-              services.length !== 0 ? { "jobTypes": { $in: services } } : {},
-            ]
-          }
-        },
-        {
-          $project: {
-            _id: 1,
-            salary: 1,
-            ratting: 1,
-            name: "$user_info.name",
-            avatar: "$user_info.avatar",
-          }
-        },
-      ])
-      .skip(pageIndex * pageSize)
-      .limit(pageSize);
-    console.log(maids);
-    res.send({ maids });
+    if (sort === "ratting") {
+      const maids = await Maid
+        .aggregate([
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'user',
+              foreignField: '_id',
+              as: 'user_info'
+            }
+          },
+          { $unwind: "$user_info" },
+          {
+            $match: {
+              $and: [
+                { "user_info.name": { $regex: search, $options: "i" } },
+                { "salary": { $gte: Number(minSalary), $lte: Number(maxSalary) } },
+                areas.length !== 0 ? { "supportAreas": { $in: areas } } : {},
+                services.length !== 0 ? { "jobTypes": { $in: services } } : {},
+              ]
+            }
+          },
+          {
+            $project: {
+              _id: 1,
+              salary: 1,
+              ratting: 1,
+              name: "$user_info.name",
+              avatar: "$user_info.avatar",
+            }
+          },
+        ])
+        .sort({ sort: -1 })
+        .skip(pageIndex * pageSize)
+        .limit(pageSize);
+      console.log(maids);
+      res.send({ maids });
+    } else {
+      res.send({ maids: [] })
+    }
   } catch (e) {
     console.log(e);
     res.send({
