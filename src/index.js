@@ -5,6 +5,9 @@ const path = require('path');
 const bodyParser = require("body-parser");
 const cors = require('cors');
 
+// Init setting
+require('./seeds/settings');
+
 // Import CRON tasks
 require('./tasks/main');
 

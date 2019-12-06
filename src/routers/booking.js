@@ -1,4 +1,4 @@
-const admin = require("firebase-admin")
+const admin = require("firebase-admin");
 const express = require("express");
 const router = new express.Router();
 const mongoose = require("mongoose");
@@ -12,12 +12,13 @@ const Booking = require("../models/booking");
 const Transaction = require("../models/transaction");
 const Maid = require("../models/maid");
 const Interval = require("../models/interval");
+const Setting = require("../models/setting");
 const Constants = require("../utils/constants");
 const authMiddleware = require("../middleware/auth");
 const adminMiddleware = require("../middleware/admin");
-const email = require('../configs/email');
-const utils = require('../utils/common');
-const configs = require('../configs/configs');
+const email = require("../configs/email");
+const utils = require("../utils/common");
+const configs = require("../configs/configs");
 
 const calculateAmount = (type, interval, startTime, endTime, salaryPerHour) => {
   let price = 0;
@@ -42,38 +43,41 @@ const addNotification = async (booking, fromUser, toUser, status, isHelper) => {
   notification.status = booking.status;
   notification.isHelper = isHelper;
   await notification.save();
-  
+
   const category = await Category.findById(booking.category);
-  const fromUserObj = await User.findById(fromUser, 'name');
+  const fromUserObj = await User.findById(fromUser, "name");
 
   // send notification
-  const querySnapshot = await admin.firestore()
-    .collection('users')
-    .doc(toUser + '')
-    .collection('tokens')
+  const querySnapshot = await admin
+    .firestore()
+    .collection("users")
+    .doc(toUser + "")
+    .collection("tokens")
     .get();
   const registrationTokens = querySnapshot.docs.map(doc => doc.id);
   var message = {
     notification: {
-      title: 'Smart Rabbit',
-      body: 'Smart Rabbit',
+      title: "Smart Rabbit",
+      body: "Smart Rabbit"
     },
     data: {
       category_vi: category.nameVi,
       category_en: category.nameEn,
-      name: fromUserObj.name + '',
-      message: Constants.MESSAGE(status),
+      name: fromUserObj.name + "",
+      message: Constants.MESSAGE(status)
     },
     tokens: registrationTokens
   };
-  admin.messaging().sendMulticast(message)
-    .then((response) => {
-      console.log('Successfully sent message:', response);
+  admin
+    .messaging()
+    .sendMulticast(message)
+    .then(response => {
+      console.log("Successfully sent message:", response);
     })
-    .catch((error) => {
-      console.log('Error sending message:', error);
+    .catch(error => {
+      console.log("Error sending message:", error);
     });
-}
+};
 
 router.post("/booking", authMiddleware, async (req, res) => {
   try {
@@ -116,7 +120,13 @@ router.post("/booking", authMiddleware, async (req, res) => {
     await booking.save();
 
     //send notification from user to helper
-    addNotification(booking, booking.createdBy, maid.user, Constants.BOOKING_STATUS.WAITING_APPROVE, true);
+    addNotification(
+      booking,
+      booking.createdBy,
+      maid.user,
+      Constants.BOOKING_STATUS.WAITING_APPROVE,
+      true
+    );
 
     res.send({ booking });
   } catch (e) {
@@ -133,7 +143,9 @@ router.get("/booking", authMiddleware, async (req, res) => {
     const id = req.query.id;
     const booking = await Booking.findById(id)
       .populate("interval")
-      .populate("createdBy").lean().exec();
+      .populate("createdBy")
+      .lean()
+      .exec();
     const maid = await Maid.findById(booking.maid).populate("user");
     booking.maid = maid;
     booking.canReview = false;
@@ -142,7 +154,9 @@ router.get("/booking", authMiddleware, async (req, res) => {
       completedAt = moment(completedAt);
       const now = moment();
       let timeToReview = moment.duration(now.diff(completedAt)).asHours();
-      if (timeToReview < 72) {
+      // Get time to review as hours, default 72h
+      const setting = await Setting.findOne();
+      if (timeToReview < (setting.dayToReview) * 24) {
         booking.canReview = true;
       }
     }
@@ -159,15 +173,20 @@ router.get("/booking", authMiddleware, async (req, res) => {
 router.get("/bookings", authMiddleware, async (req, res) => {
   try {
     // Filter
-    const status = req.query.status == Constants.BOOKING_STATUS.CANCELLED || req.query.status == Constants.BOOKING_STATUS.REJECTED
-      ? [Constants.BOOKING_STATUS.CANCELLED, Constants.BOOKING_STATUS.REJECTED]
-      : [req.query.status];
+    const status =
+      req.query.status == Constants.BOOKING_STATUS.CANCELLED ||
+      req.query.status == Constants.BOOKING_STATUS.REJECTED
+        ? [
+            Constants.BOOKING_STATUS.CANCELLED,
+            Constants.BOOKING_STATUS.REJECTED
+          ]
+        : [req.query.status];
     const pageSize = req.query.pageSize ? req.query.pageSize * 1 : 12;
     const pageIndex = req.query.pageIndex ? req.query.pageIndex * 1 : 0;
     const requestUser = req.user;
     const bookings = await Booking.find({
       createdBy: requestUser._id,
-      status: { "$in": status }
+      status: { $in: status }
     })
       .populate("createdBy")
       .skip(pageIndex * pageSize)
@@ -202,16 +221,21 @@ router.get("/bookings", authMiddleware, async (req, res) => {
 router.get("/bookings/host", authMiddleware, async (req, res) => {
   try {
     // Filter
-    const status = req.query.status == Constants.BOOKING_STATUS.CANCELLED || req.query.status == Constants.BOOKING_STATUS.REJECTED
-      ? [Constants.BOOKING_STATUS.CANCELLED, Constants.BOOKING_STATUS.REJECTED]
-      : [req.query.status];
+    const status =
+      req.query.status == Constants.BOOKING_STATUS.CANCELLED ||
+      req.query.status == Constants.BOOKING_STATUS.REJECTED
+        ? [
+            Constants.BOOKING_STATUS.CANCELLED,
+            Constants.BOOKING_STATUS.REJECTED
+          ]
+        : [req.query.status];
     const pageSize = req.query.pageSize ? req.query.pageSize : 12;
     const pageIndex = req.query.pageIndex ? req.query.pageIndex : 0;
     const requestUser = req.user;
     const maid = await Maid.findOne({ user: requestUser._id });
     const bookings = await Booking.find({
       maid: maid._id,
-      status: { "$in": status }
+      status: { $in: status }
     })
       .populate("createdBy")
       .skip(pageIndex * pageSize)
@@ -255,7 +279,13 @@ router.put("/booking/approve", authMiddleware, async (req, res) => {
     await booking.save();
 
     //send notification from helper to user
-    addNotification(booking, requestUser._id, booking.createdBy, Constants.BOOKING_STATUS.APPROVED, false)
+    addNotification(
+      booking,
+      requestUser._id,
+      booking.createdBy,
+      Constants.BOOKING_STATUS.APPROVED,
+      false
+    );
 
     res.send({ completed: true });
   } catch (e) {
@@ -269,14 +299,22 @@ router.put("/booking/complete", authMiddleware, async (req, res) => {
   const requestUser = req.user;
   try {
     const maid = await Maid.findOne({ user: requestUser._id });
-    const booking = await Booking.findOne({ maid: maid._id, _id: bookingId }).populate('category').populate('createdBy');
+    const booking = await Booking.findOne({ maid: maid._id, _id: bookingId })
+      .populate("category")
+      .populate("createdBy");
     // Has access
     // Approve
     booking.status = Constants.BOOKING_STATUS.COMPLETED;
     booking.completedAt = new Date();
 
     //send notification from helper to user
-    addNotification(booking, requestUser._id, booking.createdBy._id, Constants.BOOKING_STATUS.COMPLETED, false);
+    addNotification(
+      booking,
+      requestUser._id,
+      booking.createdBy._id,
+      Constants.BOOKING_STATUS.COMPLETED,
+      false
+    );
 
     // Add transaction for this booking
     const transaction = new Transaction();
@@ -290,20 +328,20 @@ router.put("/booking/complete", authMiddleware, async (req, res) => {
 
     // Send email
     email.send({
-        template: 'complete-booking',
-        message: {
-            from: 'Smart Rabbit <no-reply@smartrabbit.com>',
-            to: booking.createdBy.email,
-        },
-        locals: {
-            name: booking.createdBy.name,
-            category: booking.category.nameVi,
-            phone: booking.createdBy.phoneNumber,
-            amount: utils.formatCurrency(booking.amount, ''),
-            transactionId: transaction._id,
-            time: moment().format('DD/MM/YYYY HH:mm'),
-            image_url: configs.IMG_HOST,
-        }
+      template: "complete-booking",
+      message: {
+        from: "Smart Rabbit <no-reply@smartrabbit.com>",
+        to: booking.createdBy.email
+      },
+      locals: {
+        name: booking.createdBy.name,
+        category: booking.category.nameVi,
+        phone: booking.createdBy.phoneNumber,
+        amount: utils.formatCurrency(booking.amount, ""),
+        transactionId: transaction._id,
+        time: moment().format("DD/MM/YYYY HH:mm"),
+        image_url: configs.IMG_HOST
+      }
     });
     await booking.save();
     res.send({ completed: true });
@@ -321,8 +359,10 @@ router.post("/booking/cancel", authMiddleware, async (req, res) => {
   try {
     // const maid = await Maid.findOne({ user: requestUser._id });
     // const booking = await Booking.findOne({ maid: maid._id, _id: bookingId });
-    const booking = await Booking.findOne({ createdBy: requestUser._id, _id: bookingId })
-      .populate("maid");
+    const booking = await Booking.findOne({
+      createdBy: requestUser._id,
+      _id: bookingId
+    }).populate("maid");
     // Has access
     // Approve
     booking.status = Constants.BOOKING_STATUS.CANCELLED;
@@ -331,7 +371,13 @@ router.post("/booking/cancel", authMiddleware, async (req, res) => {
     await booking.save();
 
     //send notification from user to helper
-    addNotification(booking, booking.createdBy, booking.maid.user, Constants.BOOKING_STATUS.CANCELLED, true);
+    addNotification(
+      booking,
+      booking.createdBy,
+      booking.maid.user,
+      Constants.BOOKING_STATUS.CANCELLED,
+      true
+    );
 
     res.send({ completed: true });
   } catch (e) {
@@ -355,7 +401,13 @@ router.post("/booking/reject", authMiddleware, async (req, res) => {
     booking.content = content;
 
     //send notification from helper to user
-    addNotification(booking, requestUser._id, booking.createdBy, Constants.BOOKING_STATUS.REJECTED, false);
+    addNotification(
+      booking,
+      requestUser._id,
+      booking.createdBy,
+      Constants.BOOKING_STATUS.REJECTED,
+      false
+    );
 
     await booking.save();
     res.send({ completed: true });
@@ -365,7 +417,7 @@ router.post("/booking/reject", authMiddleware, async (req, res) => {
   }
 });
 
-router.get('/bookings/list', adminMiddleware, async (req, res) => {
+router.get("/bookings/list", adminMiddleware, async (req, res) => {
   try {
     const pageIndex = req.query.pageIndex * 1;
     const pageSize = req.query.pageSize * 1;
@@ -373,10 +425,10 @@ router.get('/bookings/list', adminMiddleware, async (req, res) => {
     const queryId = req.query.queryId;
     const type = req.query.type;
     let filter = {};
-    if (filterBy == 'helper' && queryId) {
-      filter = {maid: queryId}
+    if (filterBy == "helper" && queryId) {
+      filter = { maid: queryId };
     } else if (queryId) {
-      filter = {createdBy: queryId}
+      filter = { createdBy: queryId };
     }
     if (type) {
       filter.status = type;
