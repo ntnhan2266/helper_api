@@ -8,6 +8,7 @@ const bcrypt = require('bcrypt');
 const moment = require('moment');
 
 const User = require('../models/user');
+const Maid = require('../models/maid');
 const Constant = require('../utils/constants');
 const authMiddleware = require('../middleware/auth');
 const router = new express.Router();
@@ -163,7 +164,9 @@ router.get('/auth/me', authMiddleware,
     async (req, res) => {
         const requestUser = req.user;
         const user = await User.findById(requestUser._id);
-        res.send({ user });
+        const isHost = await Maid.findOne({user: requestUser._id});
+        console.log(isHost ? true : false);
+        res.send({ user, isHost: isHost ? true : false });
     }
 );
 

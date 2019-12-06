@@ -14,7 +14,8 @@ const authMiddleware = async (req, res, next) => {
                 req.token = token;
                 next();
             } else {
-                console.log(err);
+                console.log(`token: ${token}`);
+                // console.log(err);
                 res.status(401).send({ 
                     errorCode: 401,
                     errorMessage: 'Unauthorized'
