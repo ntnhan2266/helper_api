@@ -17,6 +17,7 @@ const authMiddleware = require("../middleware/auth");
 const adminMiddleware = require("../middleware/admin");
 const email = require('../configs/email');
 const utils = require('../utils/common');
+const configs = require('../configs/configs');
 
 const calculateAmount = (type, interval, startTime, endTime, salaryPerHour) => {
   let price = 0;
@@ -301,6 +302,7 @@ router.put("/booking/complete", authMiddleware, async (req, res) => {
             amount: utils.formatCurrency(booking.amount, ''),
             transactionId: transaction._id,
             time: moment().format('DD/MM/YYYY HH:mm'),
+            image_url: configs.IMG_HOST,
         }
     });
     await booking.save();

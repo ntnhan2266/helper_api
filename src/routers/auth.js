@@ -13,6 +13,7 @@ const Constant = require('../utils/constants');
 const authMiddleware = require('../middleware/auth');
 const router = new express.Router();
 const email = require('../configs/email');
+const configs = require('../configs/configs');
 
 const saltRounds = 10;
 
@@ -165,7 +166,6 @@ router.get('/auth/me', authMiddleware,
         const requestUser = req.user;
         const user = await User.findById(requestUser._id);
         const isHost = await Maid.findOne({user: requestUser._id});
-        console.log(isHost ? true : false);
         res.send({ user, isHost: isHost ? true : false });
     }
 );
@@ -271,7 +271,7 @@ router.post('/forgot-password', [
         await user.save();
         
         // Send email to user
-        const url = `http://localhost:4200/#/reset-password/${token}`;
+        const url = `${configs.WEB_URL}$reset-password/${token}`;
         await email.send({
             template: 'forgot-password',
             message: {
@@ -281,6 +281,7 @@ router.post('/forgot-password', [
             locals: {
                 name: user.name,
                 url: url,
+                image_url: configs.IMG_HOST,
             }
         });
 
