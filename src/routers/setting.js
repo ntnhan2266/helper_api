@@ -48,11 +48,11 @@ router.get("/settings", adminMiddleware, async (req, res) => {
 
 router.put("/setting/day-to-review", adminMiddleware, async (req, res) => {
   try {
-    const id = req.body.id;
-    const days = req.body.days;
-    const setting = Setting.findById(id);
-    setting.daysToReview = days;
+    const daysToReview = req.body.daysToReview;
+    const setting = await Setting.findOne();
+    setting.daysToReview = daysToReview;
     await setting.save();
+    res.send({ setting });
   } catch (e) {
     console.log(e);
     res.send({
