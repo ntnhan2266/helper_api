@@ -4,8 +4,11 @@ const express = require('express');
 const path = require('path');
 const bodyParser = require("body-parser");
 const cors = require('cors');
-require('./tasks/update-maid-review');
 
+// Import CRON tasks
+require('./tasks/main');
+
+// Import routes
 const userRouter = require('./routers/user');
 const authRouter = require('./routers/auth');
 const fileRouter = require('./routers/file');
