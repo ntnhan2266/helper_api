@@ -123,23 +123,12 @@ router.get("/maids/top-rating", authMiddleware, async (req, res) => {
   try {
     const page = req.query.pageIndex ? req.query.pageIndex : 0;
     const pageSize = req.query.pageSize ? req.query.pageSize : 10;
-    const reviews = await Review.aggregate([
-      {
-        $group: {
-          _id: "$user",
-          avgRating: { $avg: "$rating" }
-        }
-      },
-      {
-        $sort: { avgRating: -1 }
-      },
-      {
-        $limit: pageSize
-      }
-    ]);
-    const maids = await Maid.find({}, null, {
+    const maids = await Maid.find({
+      ratting: { $gte: 4 }
+    }, null, {
       skip: page * pageSize,
-      limit: pageSize
+      limit: pageSize,
+      sort: { ratting: -1 }
     }).populate({
       path: "user",
       select: "name avatar birthday gender phoneNumber address"
