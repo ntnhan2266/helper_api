@@ -259,33 +259,33 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
       ? [long, lat]
       : user.lat && user.long ? [user.long, user.lat] : null;
 
+    console.log("========")
+    console.log("Search helper")
+    console.log(pageIndex);
+    console.log(pageSize);
+    console.log(search);
+    console.log(services);
+    console.log(areas);
+    console.log(minSalary);
+    console.log(maxSalary);
+    console.log(sort)
+    console.log(coordinates);
+
+    const updateMaids = await Maid.find({
+      $or: [
+        { "location": null },
+        { "location.coordinates": [0.0, 0.0] }
+      ]
+    }).populate("user", "lat long");
+    updateMaids.forEach(async (maid) => {
+      maid.location = {
+        type: "Point",
+        coordinates: maid.user.long && maid.user.lat ? [maid.user.long, maid.user.lat] : [0.0, 0.0]
+      }
+      await maid.save();
+    });
+
     if (coordinates) {
-      console.log("========")
-      console.log("Search helper")
-      console.log(pageIndex);
-      console.log(pageSize);
-      console.log(search);
-      console.log(services);
-      console.log(areas);
-      console.log(minSalary);
-      console.log(maxSalary);
-      console.log(sort)
-      console.log(coordinates);
-
-      const updateMaids = await Maid.find({
-        $or: [
-          { "location": null },
-          { "location.coordinates": [0.0, 0.0] }
-        ]
-      }).populate("user", "lat long");
-      updateMaids.forEach(async (maid) => {
-        maid.location = {
-          type: "Point",
-          coordinates: maid.user.long && maid.user.lat ? [maid.user.long, maid.user.lat] : [0.0, 0.0]
-        }
-        await maid.save();
-      });
-
       const maids = await Maid
         .aggregate([
           {
@@ -326,6 +326,44 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
               ratting: 1,
               distance: "$distance",
               location: "$location.coordinates",
+              name: "$user_info.name",
+              avatar: "$user_info.avatar",
+            }
+          },
+          { "$sort": sort },
+          { "$skip": pageIndex * pageSize },
+          { "$limit": pageSize }
+        ]);
+      console.log(maids);
+      res.send({ maids });
+    } else if (sort.distance) {
+      const maids = await Maid
+        .aggregate([
+          {
+            $lookup: {
+              from: 'users',
+              localField: 'user',
+              foreignField: '_id',
+              as: 'user_info'
+            }
+          },
+          { $unwind: "$user_info" },
+          {
+            $match: {
+              $and: [
+                { "user_info._id": { $ne: new ObjectId(user._id) } },
+                { "user_info.name": { $regex: search, $options: "i" } },
+                { "salary": { $gte: Number(minSalary), $lte: Number(maxSalary) } },
+                areas.length !== 0 ? { "supportAreas": { $in: areas } } : {},
+                services.length !== 0 ? { "jobTypes": { $in: services } } : {},
+              ]
+            }
+          },
+          {
+            $project: {
+              _id: 1,
+              salary: 1,
+              ratting: 1,
               name: "$user_info.name",
               avatar: "$user_info.avatar",
             }
