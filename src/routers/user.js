@@ -21,6 +21,15 @@ router.post("/user/edit", authMiddleware, async (req, res) => {
     user.birthday = Date.parse(body.birthday);
     user.avatar = body.avatar;
     await user.save();
+
+    const maid = await Maid.findOne({ user: user._id });
+    maid.search = utils.removeAccents(user.name);
+    maid.location = {
+      type: "Point",
+      coordinates: user.long && user.lat ? [user.long, user.lat] : [0.0, 0.0]
+    }
+    await maid.save();
+    
     res.send({ user });
   } catch (e) {
     res.send({

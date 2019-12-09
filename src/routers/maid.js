@@ -3,7 +3,7 @@ const router = new express.Router();
 const _ = require("lodash");
 
 const Maid = require("../models/maid");
-const Review = require("../models/review");
+const utils = require("../utils/common");
 const authMiddleware = require("../middleware/auth");
 const adminMiddleware = require("../middleware/admin");
 const CONSTANTS = require("../utils/constants");
@@ -43,7 +43,12 @@ router.post("/maid", authMiddleware, async (req, res) => {
       exp: body.exp,
       salary: body.salary,
       jobTypes: body.jobTypes,
-      supportAreas: body.supportAreas
+      supportAreas: body.supportAreas,
+      search: utils.removeAccents(requestUser.name),
+      location: {
+        type: "Point",
+        coordinates: requestUser.long && requestUser.lat ? [requestUser.long, requestUser.lat] : [0.0, 0.0]
+      }
     });
     await maid.save();
     res.send({ maid, isHost: true });
@@ -67,6 +72,11 @@ router.post("/maid/edit", authMiddleware, async (req, res) => {
     maid.salary = body.salary;
     maid.jobTypes = body.jobTypes;
     maid.supportAreas = body.supportAreas;
+    maid.search = utils.removeAccents(requestUser.name);
+    maid.location = {
+      type: "Point",
+      coordinates: requestUser.long && requestUser.lat ? [requestUser.long, requestUser.lat] : [0.0, 0.0]
+    }
     await maid.save();
     res.send({ maid, isHost: true });
   } catch (e) {
@@ -262,15 +272,18 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
 
     const updateMaids = await Maid.find({
       $or: [
+        { "search": null },
+        { "search": "" },
         { "location": null },
         { "location.coordinates": [0.0, 0.0] }
       ]
-    }).populate("user", "lat long");
+    }).populate("user", "name lat long");
     updateMaids.forEach(async (maid) => {
       maid.location = {
         type: "Point",
         coordinates: maid.user.long && maid.user.lat ? [maid.user.long, maid.user.lat] : [0.0, 0.0]
       }
+      maid.search = utils.removeAccents(maid.user.name);
       await maid.save();
     });
 
@@ -301,7 +314,7 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
             $match: {
               $and: [
                 { "user_info._id": { $ne: new ObjectId(user._id) } },
-                { "user_info.name": { $regex: search, $options: "i" } },
+                { "search": { $regex: search, $options: "i" } },
                 { "salary": { $gte: Number(minSalary), $lte: Number(maxSalary) } },
                 areas.length !== 0 ? { "supportAreas": { $in: areas } } : {},
                 services.length !== 0 ? { "jobTypes": { $in: services } } : {},
@@ -317,6 +330,7 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
               location: "$location.coordinates",
               name: "$user_info.name",
               avatar: "$user_info.avatar",
+              maid_info: 1
             }
           },
           { "$sort": sort },

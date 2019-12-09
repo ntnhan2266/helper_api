@@ -51,9 +51,13 @@ const maidSchema = new mongoose.Schema({
         type: { type: String },
         coordinates: [Number]
     },
+    search: {
+        type: String,
+        default: "",
+    }
 }, { timestamps: true });
 
-maidSchema.index({ location: "2dsphere" });
+maidSchema.index({ location: "2dsphere"});
 
 const Maid = mongoose.model('Maid', maidSchema)
 
