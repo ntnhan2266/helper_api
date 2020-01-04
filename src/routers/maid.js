@@ -252,7 +252,7 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
     const maxSalary = req.query.maxSalary ? req.query.maxSalary : 0;
     const sort = req.query.sort && req.query.sort === "distance" ? { "distance": 1 } : { "ratting": -1 };
     const lat = req.query.lat;
-    const long = req.query.lat;
+    const long = req.query.long;
     const user = req.user;
     const coordinates = lat && long
       ? [long, lat]
