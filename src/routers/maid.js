@@ -314,8 +314,8 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
             $match: {
               $and: [
                 { "user_info._id": { $ne: new ObjectId(user._id) } },
-                { "search": { $regex: search, $options: "i" } },
-                { "salary": { $gte: Number(minSalary), $lte: Number(maxSalary) } },
+                search !== "" ? { "search": { $regex: search, $options: "i" } } : {},
+                minSalary !== 0 || maxSalary !== 0 ? { "salary": { $gte: Number(minSalary), $lte: Number(maxSalary) } } : {},
                 areas.length !== 0 ? { "supportAreas": { $in: areas } } : {},
                 services.length !== 0 ? { "jobTypes": { $in: services } } : {},
               ]
