@@ -251,8 +251,8 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
     const minSalary = req.query.minSalary ? req.query.minSalary : 0;
     const maxSalary = req.query.maxSalary ? req.query.maxSalary : 0;
     const sort = req.query.sort && req.query.sort === "distance" ? { "distance": 1 } : { "ratting": -1 };
-    const lat = req.query.lat;
-    const long = req.query.long;
+    const lat = req.query.lat ? Number(req.query.lat) : null;
+    const long = req.query.long ? Number(req.query.long) : null;
     const user = req.user;
     const coordinates = lat && long
       ? [long, lat]
@@ -315,7 +315,7 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
               $and: [
                 { "user_info._id": { $ne: new ObjectId(user._id) } },
                 search !== "" ? { "search": { $regex: search, $options: "i" } } : {},
-                minSalary !== 0 || maxSalary !== 0 ? { "salary": { $gte: Number(minSalary), $lte: Number(maxSalary) } } : {},
+                minSalary !== "0" || maxSalary !== "0" ? { "salary": { $gte: Number(minSalary), $lte: Number(maxSalary) } } : {},
                 areas.length !== 0 ? { "supportAreas": { $in: areas } } : {},
                 services.length !== 0 ? { "jobTypes": { $in: services } } : {},
               ]
