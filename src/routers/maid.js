@@ -3,7 +3,9 @@ const router = new express.Router();
 const _ = require("lodash");
 
 const Maid = require("../models/maid");
+const Booking = require("../models/booking");
 const utils = require("../utils/common");
+const Constants = require("../utils/constants");
 const authMiddleware = require("../middleware/auth");
 const adminMiddleware = require("../middleware/admin");
 const CONSTANTS = require("../utils/constants");
@@ -388,6 +390,154 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
     res.send({
       errorCode: 1,
       errorMessage: "Unexpected errors"
+    });
+  }
+});
+
+getDateString = (date) => {
+  const newDate = new Date(date.getTime() + 7 * 60 * 60 * 1000).toISOString();
+  return newDate.substr(0, newDate.indexOf('T'));
+}
+
+getTimeString = (time) => {
+  const date = new Date(time.getTime() + 7 * 60 * 60 * 1000).toISOString();
+  const newTime = date.substr(date.indexOf('T') + 1, 5);
+  return newTime;
+}
+
+getTime = (time) => {
+  const date = new Date(time.getTime() + 7 * 60 * 60 * 1000).toISOString();
+  const newTime = date.substr(date.indexOf('T'));
+  const newDate = new Date('2000-01-01' + newTime);
+  return newDate.getTime();
+}
+
+compareTime = (fromTime1, toTime1, fromTime2, toTime2) => {
+  return (getTime(fromTime1) <= getTime(toTime2) && getTime(toTime1) >= getTime(fromTime2));
+}
+
+router.post("/maids/check", authMiddleware, async (req, res) => {
+  try {
+    const body = req.body;
+    console.log(body);
+    const maid = req.body.maid;
+    const startDate = new Date(req.body.startDate + " 00:00:00.000");
+    const startDateString = new Date(req.body.startDate);
+    const endDate = req.body.endDate ? new Date(req.body.endDate) : null;
+    const workingDates = req.body.workingDates;
+    const startTime = new Date(req.body.startTime);
+    const endTime = new Date(req.body.endTime);
+    console.log(maid);
+    console.log(startDate);
+    console.log(startDateString);
+    console.log(endDate);
+    console.log(workingDates);
+    console.log(startTime);
+    console.log(endTime);
+
+    var count = 0;
+    var busyDate = '';
+    var busyTimeFrom = '';
+    var busyTimeTo = '';
+    if (endDate) {
+      // periodic
+      const bookings = await Booking.find({
+        maid: maid,
+        $or: [
+          {
+            $and: [
+              { startDate: { $gte: startDate } },
+              { startDate: { $lte: endDate } },
+            ]
+          },
+          {
+            $and: [
+              { startDate: { $lte: endDate } },
+              { endDate: { $gte: startDate } },
+            ]
+          }
+        ],
+        status: Constants.BOOKING_STATUS.APPROVED,
+        // startTime: { $lte: endTime },
+        // endTime: { $gte: startTime },
+      }).populate("interval");
+      console.log("booking that may contain conflicts");
+      console.log(bookings.length);
+      bookings.some(booking => {
+        if (compareTime(startTime, endTime, booking.startTime, booking.endTime)) {
+          if (booking.interval) {
+            if (workingDates) {
+              workingDates.some(workingDate => {
+                if (booking.interval.days.map(d => d.toISOString().slice(0, d.toISOString().indexOf('T'))).includes(workingDate)) {
+                  count++;
+                  busyDate = workingDate;
+                  busyTimeFrom = getTimeString(booking.startTime);
+                  busyTimeTo = getTimeString(booking.endTime);
+                  return true;
+                }
+              });
+              if (count > 0) { return true; }
+            }
+          } else {
+            if (workingDates) {
+              if (workingDates.map(d => new Date(d + " 00:00:00.000").toISOString()).includes(booking.startDate.toISOString())) {
+                count++;
+                busyDate = getDateString(booking.startDate);
+                busyTimeFrom = getTimeString(booking.startTime);
+                busyTimeTo = getTimeString(booking.endTime);
+                return true;
+              }
+            }
+          }
+        }
+      });
+    } else {
+      // once
+      const bookings = await Booking.find({
+        maid: maid,
+        $or: [
+          { startDate: startDate },
+          {
+            $and: [
+              { startDate: { $lte: startDate } },
+              { endDate: { $gte: startDate } },
+            ]
+          }
+        ],
+        status: Constants.BOOKING_STATUS.APPROVED,
+        // startTime: { $lte: endTime },
+        // endTime: { $gte: startTime },
+      }).populate("interval");
+      console.log("booking that may contain conflicts");
+      console.log(bookings.length);
+      bookings.some(booking => {
+        if (compareTime(startTime, endTime, booking.startTime, booking.endTime)) {
+          if (booking.interval) {
+            if (booking.interval.days.map(d => d.toISOString()).includes(startDateString.toISOString())) {
+              count++;
+              busyDate = req.body.startDate;
+              busyTimeFrom = getTimeString(booking.startTime);
+              busyTimeTo = getTimeString(booking.endTime);
+              return true;
+            }
+          } else {
+            count++;
+            busyDate = req.body.startDate;
+            busyTimeFrom = getTimeString(booking.startTime);
+            busyTimeTo = getTimeString(booking.endTime);
+            return true;
+          }
+        }
+      });
+    }
+    console.log("check");
+    console.log(count == 0);
+    return res.send({ check: count == 0, busyDate: busyDate, busyTimeFrom: busyTimeFrom, busyTimeTo: busyTimeTo });
+  } catch (e) {
+    console.log(e);
+    return res.send({
+      errorCode: 1,
+      errorMessage: "Can find helper"
     });
   }
 });
