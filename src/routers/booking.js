@@ -9,6 +9,7 @@ const User = require("../models/user");
 const Category = require("../models/category");
 const Notification = require("../models/notification");
 const Booking = require("../models/booking");
+const UserCategory = require("../models/userCategory");
 const Transaction = require("../models/transaction");
 const Maid = require("../models/maid");
 const Interval = require("../models/interval");
@@ -325,6 +326,22 @@ router.put("/booking/complete", authMiddleware, async (req, res) => {
     transaction.category = booking.category;
     transaction.status = Constants.TRANSATION_STATUS.WAITING;
     await transaction.save();
+
+    // count category for user
+    const userCategory = UserCategory.findOne({
+      user: requestUser._id,
+      category: booking.category._id
+    });
+    if (userCategory) {
+      userCategory.count = userCategory.count + 1;
+      await userCategory.save();
+    } else {
+      userCategory = new UserCategory();
+      userCategory.user = requestUser._id;
+      userCategory.category = booking.category._id;
+      userCategory.count = 1;
+      await userCategory.save();
+    }
 
     // Send email
     email.send({

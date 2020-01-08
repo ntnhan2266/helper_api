@@ -6,6 +6,9 @@ const _ = require("lodash");
 const adminMiddleware = require("../middleware/admin");
 const authMiddleware = require("../middleware/auth");
 const Categories = require('../models/category');
+const UserCategory = require("../models/userCategory");
+const Booking = require("../models/booking");
+const Constants = require("../utils/constants");
 
 router.get("/categories", adminMiddleware, async (req, res) => {
     try {
@@ -30,6 +33,58 @@ router.get("/categories/available", authMiddleware, async (req, res) => {
     try {
         const categories = await Categories.find({ isActive: true })
             .sort({ order: 1 })
+        res.send({ categories });
+    } catch (e) {
+        console.log(e);
+        res.send({
+            errorCode: 1,
+            errorMessage: "Can not load data"
+        });
+    }
+});
+
+router.get("/categories/suggested", authMiddleware, async (req, res) => {
+    const requestUser = req.user;
+    try {
+        var userCategories = await UserCategory.find({
+            user: requestUser._id,
+        })
+            .populate("category")
+            .sort({ count: -1 });
+        if (userCategories.length == 0) {
+            const bookings = await Booking.find({
+                createdBy: requestUser._id,
+                status: Constants.BOOKING_STATUS.COMPLETED,
+            });
+            var bookingObj = {};
+            bookings.forEach(booking => {
+                bookingObj[booking.category] = bookingObj[booking.category] ? (bookingObj[booking.category] + 1) : 1;
+            });
+            for (let [key, value] of Object.entries(bookingObj)) {
+                var userCategory = new UserCategory();
+                userCategory.user = requestUser._id;
+                userCategory.category = key;
+                userCategory.count = value;
+                userCategory.save();
+            }
+            userCategories = await UserCategory.find({
+                user: requestUser._id,
+            })
+                .populate("category")
+                .sort({ count: -1 });
+        }
+        var categories = userCategories
+            .filter(userCategory => userCategory.category.isActive)
+            .map(userCategory => userCategory.category);
+        if (categories.length < 4) {
+            const moreCategories = await Categories.find({
+                isActive: true,
+                _id: { $nin: categories.map(c => c._id) }
+            }).sort({ order: 1 }).limit(4);
+            categories = [...categories, ...moreCategories];
+        }
+        console.log("categories");
+        console.log(categories);
         res.send({ categories });
     } catch (e) {
         console.log(e);
