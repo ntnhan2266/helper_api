@@ -1,10 +1,12 @@
 const express = require("express");
 
 const User = require("../models/user");
+const Maid = require('../models/maid');
 const authMiddleware = require("../middleware/auth");
 const adminMiddleware = require("../middleware/admin");
 const router = new express.Router();
 const CONSTANTS = require('../utils/constants');
+const utils = require('../utils/common');
 
 router.post("/user/edit", authMiddleware, async (req, res) => {
   try {
@@ -23,15 +25,47 @@ router.post("/user/edit", authMiddleware, async (req, res) => {
     await user.save();
 
     const maid = await Maid.findOne({ user: user._id });
-    maid.search = utils.removeAccents(user.name);
-    maid.location = {
-      type: "Point",
-      coordinates: user.long && user.lat ? [user.long, user.lat] : [0.0, 0.0]
+    if (maid) {
+      maid.search = utils.removeAccents(user.name);
+      maid.location = {
+        type: "Point",
+        coordinates: user.long && user.lat ? [user.long, user.lat] : [0.0, 0.0]
+      }
+      await maid.save();
     }
-    await maid.save();
     
     res.send({ user });
   } catch (e) {
+    res.send({
+      errorCode: 1,
+      errorMessage: "Can not verify token"
+    });
+  }
+});
+
+router.put('/user/edit-address', authMiddleware, async (req, res) => {
+  try {
+    const requestUser = req.user;
+    const user = await User.findById(requestUser._id);
+    const body = req.body;
+    user.long = body.long;
+    user.lat = body.lat;
+    user.address = body.address;
+    await user.save();
+
+    const maid = await Maid.findOne({ user: user._id });
+    if (maid) {
+      maid.search = utils.removeAccents(user.name);
+      maid.location = {
+        type: "Point",
+        coordinates: user.long && user.lat ? [user.long, user.lat] : [0.0, 0.0]
+      }
+      await maid.save();
+    }
+    
+    res.send({ user });
+  } catch (e) {
+    console.log(e)
     res.send({
       errorCode: 1,
       errorMessage: "Can not verify token"

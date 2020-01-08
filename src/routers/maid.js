@@ -279,7 +279,7 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
         { "location": null },
         { "location.coordinates": [0.0, 0.0] }
       ]
-    }).populate("user", "name lat long");
+    }).populate("user", "name avatar lat long");
     updateMaids.forEach(async (maid) => {
       maid.location = {
         type: "Point",

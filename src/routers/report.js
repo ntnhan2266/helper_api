@@ -17,6 +17,7 @@ router.post("/report", authMiddleware, async (req, res) => {
     report.reportedBy = booking.createdBy;
     report.reason = req.body.reason;
     report.description = req.body.description;
+    report.bookingId = bookingId;
     await report.save();
     return res.send({ completed: true });
   } catch (e) {
