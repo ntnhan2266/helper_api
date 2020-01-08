@@ -356,7 +356,7 @@ router.put("/booking/complete", authMiddleware, async (req, res) => {
         phone: booking.createdBy.phoneNumber,
         amount: utils.formatCurrency(booking.amount, ""),
         transactionId: transaction._id,
-        time: moment().format("DD/MM/YYYY HH:mm"),
+        time: moment().add(7, 'hours').format("DD/MM/YYYY HH:mm"),
         image_url: configs.IMG_HOST
       }
     });
