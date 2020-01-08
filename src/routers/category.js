@@ -103,6 +103,7 @@ router.get("/categories/statistic", authMiddleware, async (req, res) => {
         })
             .populate("category")
             .sort({ count: -1 });
+            console.log(userCategories)
         if (userCategories.length == 0) {
             const bookings = await Booking.find({
                 createdBy: requestUser._id,
@@ -125,6 +126,7 @@ router.get("/categories/statistic", authMiddleware, async (req, res) => {
                 .populate("category")
                 .sort({ count: -1 });
         }
+        console.log(statistic);
         var statistic = userCategories
             .filter(userCategory => userCategory.category.isActive)
             .map(userCategory => {
@@ -134,7 +136,6 @@ router.get("/categories/statistic", authMiddleware, async (req, res) => {
                 }
             });
         console.log("statistic");
-        console.log(statistic);
         res.send({ statistic });
     } catch (e) {
         console.log(e);
