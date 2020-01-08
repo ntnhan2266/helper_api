@@ -11,6 +11,11 @@ const reportSchema = new mongoose.Schema({
         ref: "User",
         default: null,
     },
+    bookingId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Booking",
+        default: null,
+    },
     reason: {
         type: Number,
         default: 0,
