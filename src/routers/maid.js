@@ -11,6 +11,7 @@ const adminMiddleware = require("../middleware/admin");
 const CONSTANTS = require("../utils/constants");
 var ObjectId = require('mongoose').Types.ObjectId;
 
+
 router.get("/maid", authMiddleware, async (req, res) => {
   try {
     let maid;
@@ -400,7 +401,7 @@ getDateString = (date) => {
 }
 
 getTimeString = (time) => {
-  const date = new Date(time.getTime() + 7 * 60 * 60 * 1000).toISOString();
+  const date = new Date(time.getTime()).toISOString();
   const newTime = date.substr(date.indexOf('T') + 1, 5);
   return newTime;
 }
