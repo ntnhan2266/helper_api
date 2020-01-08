@@ -328,7 +328,7 @@ router.put("/booking/complete", authMiddleware, async (req, res) => {
     await transaction.save();
 
     // count category for user
-    const userCategory = await UserCategory.findOne({
+    let userCategory = await UserCategory.findOne({
       user: requestUser._id,
       category: booking.category._id
     });
