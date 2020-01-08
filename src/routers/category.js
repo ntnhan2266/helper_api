@@ -95,6 +95,56 @@ router.get("/categories/suggested", authMiddleware, async (req, res) => {
     }
 });
 
+router.get("/categories/statistic", authMiddleware, async (req, res) => {
+    const requestUser = req.user;
+    try {
+        var userCategories = await UserCategory.find({
+            user: requestUser._id,
+        })
+            .populate("category")
+            .sort({ count: -1 });
+        if (userCategories.length == 0) {
+            const bookings = await Booking.find({
+                createdBy: requestUser._id,
+                status: Constants.BOOKING_STATUS.COMPLETED,
+            });
+            var bookingObj = {};
+            bookings.forEach(booking => {
+                bookingObj[booking.category] = bookingObj[booking.category] ? (bookingObj[booking.category] + 1) : 1;
+            });
+            for (let [key, value] of Object.entries(bookingObj)) {
+                var userCategory = new UserCategory();
+                userCategory.user = requestUser._id;
+                userCategory.category = key;
+                userCategory.count = value;
+                userCategory.save();
+            }
+            userCategories = await UserCategory.find({
+                user: requestUser._id,
+            })
+                .populate("category")
+                .sort({ count: -1 });
+        }
+        var statistic = userCategories
+            .filter(userCategory => userCategory.category.isActive)
+            .map(userCategory => {
+                return {
+                    category: userCategory.category,
+                    count: userCategory.count,
+                }
+            });
+        console.log("statistic");
+        console.log(statistic);
+        res.send({ statistic });
+    } catch (e) {
+        console.log(e);
+        res.send({
+            errorCode: 1,
+            errorMessage: "Can not load data"
+        });
+    }
+});
+
 router.get("/category", adminMiddleware, async (req, res) => {
     try {
         const id = req.query.id;
