@@ -151,13 +151,14 @@ router.get("/booking", authMiddleware, async (req, res) => {
     booking.canReview = false;
     let completedAt = booking.completedAt;
     if (completedAt != null && !booking.isReviewed) {
-      console.log('a')
       completedAt = moment(completedAt);
       const now = moment();
       let timeToReview = moment.duration(now.diff(completedAt)).asHours();
+      console.log(timeToReview)
+      console.log(setting.dayToReview)
       // Get time to review as hours, default 72h
       const setting = await Setting.findOne();
-      if (timeToReview < (setting.dayToReview) * 24) {
+      if (timeToReview <= (setting.dayToReview) * 24) {
         booking.canReview = true;
       }
     }
