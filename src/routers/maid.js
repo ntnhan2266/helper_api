@@ -257,6 +257,7 @@ router.get("/maids/search", authMiddleware, async (req, res) => {
     const lat = req.query.lat ? Number(req.query.lat) : null;
     const long = req.query.long ? Number(req.query.long) : null;
     const user = req.user;
+    console.log(user);
     const coordinates = lat && long
       ? [long, lat]
       : user.lat && user.long ? [user.long, user.lat] : null;
