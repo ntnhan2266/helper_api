@@ -328,19 +328,19 @@ router.put("/booking/complete", authMiddleware, async (req, res) => {
     await transaction.save();
 
     // count category for user
-    const userCategory = UserCategory.findOne({
+    const userCategory = await UserCategory.findOne({
       user: requestUser._id,
       category: booking.category._id
     });
     if (userCategory) {
       userCategory.count = userCategory.count + 1;
-      await userCategory.save();
+      userCategory.save();
     } else {
       userCategory = new UserCategory();
       userCategory.user = requestUser._id;
       userCategory.category = booking.category._id;
       userCategory.count = 1;
-      await userCategory.save();
+      userCategory.save();
     }
 
     // Send email
