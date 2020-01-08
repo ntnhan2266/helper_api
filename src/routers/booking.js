@@ -329,7 +329,7 @@ router.put("/booking/complete", authMiddleware, async (req, res) => {
 
     // count category for user
     let userCategory = await UserCategory.findOne({
-      user: requestUser._id,
+      user: booking.createdBy._id,
       category: booking.category._id
     });
     if (userCategory) {
@@ -337,7 +337,7 @@ router.put("/booking/complete", authMiddleware, async (req, res) => {
       userCategory.save();
     } else {
       userCategory = new UserCategory();
-      userCategory.user = requestUser._id;
+      userCategory.user = booking.createdBy._id,
       userCategory.category = booking.category._id;
       userCategory.count = 1;
       userCategory.save();

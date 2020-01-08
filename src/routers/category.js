@@ -126,7 +126,6 @@ router.get("/categories/statistic", authMiddleware, async (req, res) => {
                 .populate("category")
                 .sort({ count: -1 });
         }
-        console.log(statistic);
         var statistic = userCategories
             .filter(userCategory => userCategory.category.isActive)
             .map(userCategory => {
@@ -135,7 +134,7 @@ router.get("/categories/statistic", authMiddleware, async (req, res) => {
                     count: userCategory.count,
                 }
             });
-        console.log("statistic");
+        console.log(statistic);
         res.send({ statistic });
     } catch (e) {
         console.log(e);
