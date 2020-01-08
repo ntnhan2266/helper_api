@@ -151,6 +151,7 @@ router.get("/booking", authMiddleware, async (req, res) => {
     booking.canReview = false;
     let completedAt = booking.completedAt;
     if (completedAt != null && !booking.isReviewed) {
+      console.log('a')
       completedAt = moment(completedAt);
       const now = moment();
       let timeToReview = moment.duration(now.diff(completedAt)).asHours();
