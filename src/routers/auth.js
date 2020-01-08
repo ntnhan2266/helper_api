@@ -147,7 +147,7 @@ router.post('/login-with-fb', [
                     });
                     await newUser.save();
                     let privateKey = fs.readFileSync(path.join(__dirname, '../configs/jwtRS256.key'), 'utf8');
-                    let token = jwt.sign({ user: user }, privateKey, { algorithm: 'RS256' });
+                    let token = jwt.sign({ user: newUser }, privateKey, { algorithm: 'RS256' });
                     res.send({ user: newUser, token });
                 }
 
