@@ -175,11 +175,11 @@ router.get("/bookings", authMiddleware, async (req, res) => {
     // Filter
     const status =
       req.query.status == Constants.BOOKING_STATUS.CANCELLED ||
-      req.query.status == Constants.BOOKING_STATUS.REJECTED
+        req.query.status == Constants.BOOKING_STATUS.REJECTED
         ? [
-            Constants.BOOKING_STATUS.CANCELLED,
-            Constants.BOOKING_STATUS.REJECTED
-          ]
+          Constants.BOOKING_STATUS.CANCELLED,
+          Constants.BOOKING_STATUS.REJECTED
+        ]
         : [req.query.status];
     const pageSize = req.query.pageSize ? req.query.pageSize * 1 : 12;
     const pageIndex = req.query.pageIndex ? req.query.pageIndex * 1 : 0;
@@ -223,11 +223,11 @@ router.get("/bookings/host", authMiddleware, async (req, res) => {
     // Filter
     const status =
       req.query.status == Constants.BOOKING_STATUS.CANCELLED ||
-      req.query.status == Constants.BOOKING_STATUS.REJECTED
+        req.query.status == Constants.BOOKING_STATUS.REJECTED
         ? [
-            Constants.BOOKING_STATUS.CANCELLED,
-            Constants.BOOKING_STATUS.REJECTED
-          ]
+          Constants.BOOKING_STATUS.CANCELLED,
+          Constants.BOOKING_STATUS.REJECTED
+        ]
         : [req.query.status];
     const pageSize = req.query.pageSize ? req.query.pageSize : 12;
     const pageIndex = req.query.pageIndex ? req.query.pageIndex : 0;
@@ -477,6 +477,83 @@ router.put("/booking/admin-cancel", adminMiddleware, async (req, res) => {
   } catch (e) {
     console.log(e);
     res.status(401).send({ completed: false });
+  }
+});
+
+getDateString = (date) => {
+  const newDate = new Date(date.getTime() + 7 * 60 * 60 * 1000).toISOString();
+  return newDate.substr(0, newDate.indexOf('T'));
+}
+
+getTimeString = (time) => {
+  const date = new Date(time.getTime() + 7 * 60 * 60 * 1000).toISOString();
+  const newTime = date.substr(date.indexOf('T') + 1, 5);
+  return newTime;
+}
+
+router.get("/bookings/calendar", authMiddleware, async (req, res) => {
+  try {
+    // Filter
+    const requestUser = req.user;
+    const from = req.query.from;
+    const to = req.query.to;
+    const fromDate = new Date(from + " 00:00:00.000");
+    const toDate = new Date(to + " 00:00:00.000");
+    console.log(from);
+    console.log(to);
+    console.log(fromDate);
+    console.log(toDate);
+    const bookings = await Booking.find({
+      $or: [
+        { createdBy: requestUser._id },
+        { maid: requestUser._id },
+      ],
+      $or: [
+        {
+          $and: [
+            { startDate: { $gte: fromDate } },
+            { startDate: { $lte: toDate } },
+          ]
+        },
+        {
+          $and: [
+            { startDate: { $lte: toDate } },
+            { endDate: { $gte: fromDate } },
+          ]
+        }
+      ],
+      status: Constants.BOOKING_STATUS.APPROVED,
+    }).populate("interval category");
+    var calendar = {};
+    bookings.forEach(booking => {
+      var data = {
+        user: booking.createdBy,
+        helper: booking.maid,
+        categoryVi: booking.category.nameVi,
+        categoryEn: booking.category.nameEn,
+        address: booking.address,
+        startTime: getTimeString(booking.startTime),
+        endTime: getTimeString(booking.endTime),
+      };
+      if (booking.interval) {
+        var dates = booking.interval.days || [];
+        dates.forEach(datetime => {
+          const date = datetime.toISOString().substr(0, 10);
+          calendar[date] = [...(calendar[date] || []), data];
+        })
+      } else {
+        var date = getDateString(booking.startDate);
+        calendar[date] = [...(calendar[date] || []), data];
+      }
+    });
+    console.log(calendar);
+    res.send({ calendar });
+  } catch (e) {
+    console.log(e);
+    res.send({
+      errorCode: 1,
+      errorMessage: "Failed to load data"
+    });
   }
 });
 
