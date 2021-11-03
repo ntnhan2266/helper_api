@@ -30,7 +30,7 @@
     "nodemailer": "^6.4.0",
     "querystring": "^0.2.0",
     "request": "^2.88.0",
-    "validator": "^10.11.0"
+    "validator": "^13.7.0"
   },
   "devDependencies": {
     "nodemon": "^1.19.1"
